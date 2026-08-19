@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>唯远资源下载平台</title>
+<style>
+  :root{
+    --bg:#0f172a; --bg2:#1e293b; --card:#1e293b; --border:#334155;
+    --text:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#8b5cf6;
+    --green:#10b981; --orange:#f59e0b; --red:#ef4444;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
+    background:linear-gradient(180deg,#0f172a 0%,#1e293b 100%);
+    color:var(--text);min-height:100vh;line-height:1.6;
+  }
+  .container{max-width:1100px;margin:0 auto;padding:0 20px}
+  /* Header */
+  header{
+    background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.15));
+    border-bottom:1px solid var(--border);
+    padding:48px 0 40px;text-align:center;
+  }
+  header .logo{
+    width:84px;height:84px;margin:0 auto 18px;border-radius:20px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center;
+    font-size:40px;box-shadow:0 8px 32px rgba(99,102,241,.4);
+  }
+  header h1{font-size:32px;font-weight:800;letter-spacing:1px;margin-bottom:8px}
+  header h1 .brand{background:linear-gradient(135deg,#818cf8,#c4b5fd);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  header .subtitle{color:var(--muted);font-size:15px}
+  header .repo-link{
+    display:inline-flex;align-items:center;gap:6px;margin-top:14px;
+    padding:6px 14px;background:rgba(99,102,241,.15);border:1px solid var(--border);
+    border-radius:20px;color:#a5b4fc;text-decoration:none;font-size:13px;transition:.2s;
+  }
+  header .repo-link:hover{background:rgba(99,102,241,.25);transform:translateY(-1px)}
+  /* Toolbar */
+  .toolbar{
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
+    padding:20px 0;
+  }
+  .stats{display:flex;gap:16px;flex-wrap:wrap}
+  .stat{font-size:13px;color:var(--muted)}
+  .stat b{color:var(--text);font-weight:600}
+  .refresh-btn{
+    padding:8px 16px;background:var(--bg2);border:1px solid var(--border);
+    border-radius:8px;color:var(--text);cursor:pointer;font-size:13px;transition:.2s;
+  }
+  .refresh-btn:hover{border-color:var(--accent);background:rgba(99,102,241,.1)}
+  .refresh-btn:disabled{opacity:.5;cursor:not-allowed}
+  /* Status */
+  #status{text-align:center;padding:60px 20px;color:var(--muted)}
+  .spinner{
+    width:36px;height:36px;margin:0 auto 16px;border:3px solid var(--border);
+    border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .error-box{
+    max-width:520px;margin:0 auto;padding:24px;background:rgba(239,68,68,.08);
+    border:1px solid rgba(239,68,68,.3);border-radius:12px;
+  }
+  .error-box h3{color:#fca5a5;margin-bottom:8px}
+  /* Release card */
+  .release{margin-bottom:24px}
+  .release-card{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;
+    overflow:hidden;transition:.2s;
+  }
+  .release-card:hover{border-color:rgba(99,102,241,.4);box-shadow:0 8px 32px rgba(0,0,0,.3)}
+  .release-head{
+    padding:20px 24px;border-bottom:1px solid var(--border);
+    display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;
+  }
+  .release-titlewrap{flex:1;min-width:200px}
+  .release-tag{
+    display:inline-block;padding:3px 10px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border-radius:6px;font-size:13px;font-weight:600;margin-bottom:8px;
+  }
+  .release-name{font-size:18px;font-weight:700;word-break:break-word}
+  .release-meta{font-size:12px;color:var(--muted);margin-top:6px;display:flex;gap:12px;flex-wrap:wrap}
+  .release-meta span{display:inline-flex;align-items:center;gap:4px}
+  .badge{
+    padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;
+    background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);
+  }
+  .badge.prerelease{background:rgba(245,158,11,.15);color:#fcd34d;border-color:rgba(245,158,11,.3)}
+  .release-body{padding:16px 24px;color:var(--muted);font-size:14px;max-height:280px;overflow-y:auto}
+  .release-body::-webkit-scrollbar{width:6px}
+  .release-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  .release-body a{color:#a5b4fc}
+  .release-body code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:12px}
+  .release-body pre{background:var(--bg);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0}
+  .assets{padding:16px 24px 24px;border-top:1px solid var(--border)}
+  .assets-title{font-size:13px;color:var(--muted);margin-bottom:12px;font-weight:600}
+  .asset-row{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+    padding:10px 0;border-bottom:1px dashed var(--border);
+  }
+  .asset-row:last-of-type{border-bottom:0}
+  .asset-info{flex:1;min-width:160px}
+  .asset-name{font-size:14px;font-weight:500;word-break:break-all}
+  .asset-size{font-size:12px;color:var(--muted);margin-top:2px}
+  .download-btn{
+    display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
+    background:linear-gradient(135deg,var(--green),#059669);color:#fff;
+    border:none;border-radius:8px;font-size:13px;font-weight:600;
+    text-decoration:none;cursor:pointer;transition:.2s;white-space:nowrap;
+  }
+  .download-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(16,185,129,.4)}
+  .download-btn.source{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+  .download-btn.source:hover{box-shadow:0 4px 16px rgba(99,102,241,.4)}
+  .source-row{
+    display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;padding-top:14px;
+    border-top:1px solid var(--border);
+  }
+  footer{text-align:center;padding:32px 20px;color:var(--muted);font-size:13px;border-top:1px solid var(--border);margin-top:40px}
+  footer a{color:#a5b4fc;text-decoration:none}
+  /* Comments */
+  .comments{max-width:1100px;margin:0 auto;padding:32px 20px}
+  .comments-title{font-size:20px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .comments-title .badge{background:linear-gradient(135deg,var(--accent),var(--accent2));border:0;color:#fff;padding:3px 10px;border-radius:6px;font-size:12px}
+  .comments-sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+  .giscus-frame{width:100%;border:0}
+  @media(max-width:600px){
+    header h1{font-size:24px}
+    .release-head{padding:16px}
+    .assets{padding:14px 16px 18px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="logo">📦</div>
+    <h1><span class="brand">唯远</span>资源下载平台</h1>
+    <p class="subtitle">聚合 GitHub 打包发布成果 · 一键下载</p>
+    <a class="repo-link" href="https://github.com/XZZ-A11Y/Every-day-Share" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      XZZ-A11Y/Every-day-Share
+    </a>
+  </div>
+</header>
+
+<div class="container">
+  <div class="toolbar">
+    <div class="stats" id="stats"></div>
+    <button class="refresh-btn" id="refreshBtn" title="重新加载">
+      ↻ 刷新
+    </button>
+  </div>
+  <div id="status"></div>
+  <div id="releases"></div>
+</div>
+
+<footer>
+  <div class="container">
+    数据源：<a href="https://github.com/XZZ-A11Y/Every-day-Share/releases" target="_blank" rel="noopener">GitHub Releases API</a> ·
+    唯远资源下载平台 · 静态部署
+  </div>
+</footer>
+
+<section class="comments">
+  <div class="comments-title">💬 评论区 <span class="badge">Giscus</span></div>
+  <p class="comments-sub">基于 GitHub Discussions，登录 GitHub 账号即可参与讨论。</p>
+  <script src="https://giscus.app/client.js"
+          data-repo="XZZ-A11Y/Every-day-Share"
+          data-repo-id="R_kgDOT8c-6w"
+          data-category="Announcements"
+          data-category-id="DIC_kwDOT8c-684DDp1J"
+          data-mapping="pathname"
+          data-strict="0"
+          data-reactions-enabled="1"
+          data-emit-metadata="1"
+          data-input-position="bottom"
+          data-theme="preferred_color_scheme"
+          data-lang="zh-CN"
+          crossorigin="anonymous"
+          async>
+  </script>
+</section>
+
+<script>
+(function(){
+  "use strict";
+  var REPO = "XZZ-A11Y/Every-day-Share";
+  var API  = "https://api.github.com/repos/" + REPO + "/releases?per_page=100";
+  var statusEl  = document.getElementById("status");
+  var listEl   = document.getElementById("releases");
+  var statsEl  = document.getElementById("stats");
+  var btn      = document.getElementById("refreshBtn");
+
+  function fmtSize(bytes){
+    if(!bytes && bytes!==0) return "";
+    if(bytes < 1024) return bytes + " B";
+    if(bytes < 1048576) return (bytes/1024).toFixed(1) + " KB";
+    if(bytes < 1073741824) return (bytes/1048576).toFixed(1) + " MB";
+    return (bytes/1073741824).toFixed(2) + " GB";
+  }
+  function fmtDate(iso){
+    if(!iso) return "";
+    var d = new Date(iso);
+    if(isNaN(d)) return iso;
+    var pad = function(n){ return n<10?"0"+n:n; };
+    return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+" "+pad(d.getHours())+":"+pad(d.getMinutes());
+  }
+  // 渲染 markdown 的极简子集（标题、粗体、代码、链接、列表、换行）
+  function renderMd(md){
+    if(!md) return "";
+    var esc = md.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    esc = esc.replace(/```([\s\S]*?)```/g, function(_,c){ return "<pre><code>"+c.replace(/^\n/,"")+"</code></pre>"; });
+    esc = esc.replace(/`([^`]+)`/g, "<code>$1</code>");
+    esc = esc.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    esc = esc.replace(/^### (.+)$/gm, "<h4>$1</h4>");
+    esc = esc.replace(/^## (.+)$/gm, "<h3>$1</h3>");
+    esc = esc.replace(/^# (.+)$/gm, "<h3>$1</h3>");
+    esc = esc.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    esc = esc.replace(/^[-*] (.+)$/gm, "<li>$1</li>");
+    esc = esc.replace(/(<li>[\s\S]*?<\/li>)/g, "<ul>$1</ul>");
+    esc = esc.replace(/\n{2,}/g, "</p><p>");
+    esc = "<p>"+esc+"</p>";
+    esc = esc.replace(/<p><h([34])>/g, "<h$1>").replace(/<\/h([34])><\/p>/g, "</h$1>");
+    esc = esc.replace(/<p><pre>/g,"<pre>").replace(/<\/pre><\/p>/g,"</pre>");
+    esc = esc.replace(/<p><ul>/g,"<ul>").replace(/<\/ul><\/p>/g,"</ul>");
+    return esc;
+  }
+
+  function showLoading(){
+    statusEl.innerHTML = '<div class="spinner"></div><p>正在从 GitHub 拉取发布数据…</p>';
+    listEl.innerHTML = "";
+    statsEl.innerHTML = "";
+  }
+  function showError(msg, detail){
+    statusEl.innerHTML = '<div class="error-box"><h3>⚠ ' + msg + '</h3>'+(detail?'<p style="margin-top:6px;font-size:13px;color:#94a3b8">'+detail+'</p>':'')+'</div>';
+  }
+  function showEmpty(){
+    statusEl.innerHTML =
+      '<div style="max-width:520px;margin:0 auto;padding:32px;background:rgba(99,102,241,.06);border:1px solid var(--border);border-radius:12px">'+
+      '<div style="font-size:48px;margin-bottom:12px">📭</div>'+
+      '<h3 style="font-size:18px;margin-bottom:8px">暂无发布内容</h3>'+
+      '<p>该仓库目前还没有任何 Release。当仓库所有者在 GitHub 上发布新版本并上传打包成果后，此页面会自动展示并生成下载按钮。</p>'+
+      '<p style="margin-top:14px;font-size:13px">仓库地址：<a href="https://github.com/'+REPO+'/releases/new" target="_blank" rel="noopener" style="color:#a5b4fc">前往创建第一个发布 →</a></p>'+
+      '</div>';
+  }
+
+  function render(releases){
+    statusEl.innerHTML = "";
+    if(!releases || !releases.length){ showEmpty(); return; }
+    var assetCount = 0, totalBytes = 0;
+    var html = "";
+    for(var i=0; i<releases.length; i++){
+      var r = releases[i];
+      var assets = r.assets || [];
+      assetCount += assets.length;
+      for(var j=0;j<assets.length;j++) totalBytes += assets[j].size||0;
+      var isPre = r.prerelease || r.draft;
+      var badge = r.prerelease ? '<span class="badge prerelease">预发布</span>'
+                : r.draft ? '<span class="badge prerelease">草稿</span>' : "";
+      var card = '<section class="release"><div class="release-card">';
+      card += '<div class="release-head"><div class="release-titlewrap">';
+      card += '<span class="release-tag">v'+(r.tag_name||r.name||"#"+r.id)+'</span> '+badge;
+      card += '<div class="release-name">'+(r.name||r.tag_name||"未命名发布")+'</div>';
+      card += '<div class="release-meta">'+
+              '<span>📅 '+fmtDate(r.published_at||r.created_at)+'</span>'+
+              '<span>🏷 '+escapeHtml(r.tag_name||"-")+'</span>'+
+              (r.author?'<span>👤 '+escapeHtml(r.author.login)+'</span>':'')+
+              '</div>';
+      card += '</div></div>';
+      if(r.body){
+        card += '<div class="release-body">'+renderMd(r.body)+'</div>';
+      }
+      // 资产下载
+      if(assets.length){
+        card += '<div class="assets"><div class="assets-title">打包成果 ('+assets.length+')</div>';
+        for(var k=0;k<assets.length;k++){
+          var a = assets[k];
+          card += '<div class="asset-row"><div class="asset-info">'+
+                  '<div class="asset-name">'+escapeHtml(a.name)+'</div>'+
+                  '<div class="asset-size">'+fmtSize(a.size)+' · 下载 '+a.download_count+' 次</div>'+
+                  '</div><a class="download-btn" href="'+a.browser_download_url+'" target="_blank" rel="noopener">⬇ 下载</a></div>';
+        }
+        card += '</div>';
+      } else {
+        card += '<div class="assets"><div class="assets-title">该发布未附带打包文件，可下载源码归档：</div>';
+        card += '<div class="source-row">'+
+                '<a class="download-btn source" href="'+r.zipball_url+'" target="_blank" rel="noopener">⬇ Source code (zip)</a>'+
+                '<a class="download-btn source" href="'+r.tarball_url+'" target="_blank" rel="noopener">⬇ Source code (tar.gz)</a>'+
+                '</div></div>';
+      }
+      // 即使有 assets 也额外提供源码
+      if(assets.length){
+        card += '<div class="assets" style="border-top:1px solid var(--border);padding-top:14px"><div class="source-row">'+
+                '<a class="download-btn source" href="'+r.zipball_url+'" target="_blank" rel="noopener">⬇ Source code (zip)</a>'+
+                '<a class="download-btn source" href="'+r.tarball_url+'" target="_blank" rel="noopener">⬇ Source code (tar.gz)</a>'+
+                '</div></div>';
+      }
+      card += '</div></section>';
+      html += card;
+    }
+    listEl.innerHTML = html;
+    statsEl.innerHTML =
+      '<span class="stat">发布版本：<b>'+releases.length+'</b></span>'+
+      '<span class="stat">打包文件：<b>'+assetCount+'</b></span>'+
+      '<span class="stat">总大小：<b>'+fmtSize(totalBytes)+'</b></span>'+
+      '<span class="stat">仓库：<b>'+REPO+'</b></span>';
+  }
+
+  function escapeHtml(s){
+    if(s==null) return "";
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  var loading = false;
+  function load(){
+    if(loading) return;
+    loading = true;
+    btn.disabled = true;
+    showLoading();
+    fetch(API, {headers:{"Accept":"application/vnd.github+json"}})
+      .then(function(resp){
+        if(!resp.ok){
+          return resp.json().then(function(j){ throw new Error(j.message||("HTTP "+resp.status)); }, function(){ throw new Error("HTTP "+resp.status); });
+        }
+        return resp.json();
+      })
+      .then(function(data){
+        render(data);
+      })
+      .catch(function(err){
+        var msg = err && err.message ? err.message : String(err);
+        if(/404/.test(msg)){
+          showError("仓库不存在或无访问权限","请确认仓库名称 XZZ-A11Y/Every-day-Share 是否正确，以及仓库是否为 public。");
+        } else if(/403|rate limit/i.test(msg)){
+          showError("GitHub API 速率受限","未认证请求每小时限 60 次。请稍后再试，或在 GitHub 登录后访问。");
+        } else {
+          showError("加载失败", msg);
+        }
+      })
+      .finally(function(){
+        loading = false;
+        btn.disabled = false;
+      });
+  }
+
+  btn.addEventListener("click", load);
+  load();
+})();
+</script>
+</body>
+</html>
