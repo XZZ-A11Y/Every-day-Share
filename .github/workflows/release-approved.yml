@@ -1,0 +1,72 @@
+name: Release Approved Resources
+
+on:
+  issues:
+    types: [closed]
+
+permissions:
+  issues: write
+  contents: write
+
+jobs:
+  release:
+    if: |
+      contains(github.event.issue.labels.*.name, 'approved') &&
+      contains(github.event.issue.labels.*.name, 'resource-request')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get all approved submissions
+        uses: actions/github-script@v7
+        id: collect
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'resource-request,approved',
+              state: 'closed',
+              per_page: 100
+            });
+
+            const items = issues.data.map(issue => {
+              const lines = issue.body.split('\n');
+              const contentStart = lines.findIndex(l => l.includes('### 资源内容'));
+              const content = contentStart > -1
+                ? lines.slice(contentStart + 2).join('\n').split('---')[0].trim()
+                : issue.body;
+
+              return {
+                title: issue.title.replace('[投稿] ', ''),
+                content: content,
+                number: issue.number,
+                submitter: lines.find(l => l.includes('投稿人'))?.split('|')[2]?.trim() || '匿名'
+              };
+            });
+
+            return items;
+
+      - name: Generate Release Notes
+        id: notes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const items = ${{ steps.collect.outputs.result }};
+            let notes = '## 📦 本期资源汇总\n\n';
+            items.forEach((item, i) => {
+              notes += `### ${i + 1}. ${item.title}\n`;
+              notes += `**投稿人**：${item.submitter}\n\n`;
+              notes += item.content + '\n\n---\n\n';
+            });
+            return notes;
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: 资源发布 #${{ github.run_number }}
+          body: ${{ steps.notes.outputs.result }}
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
