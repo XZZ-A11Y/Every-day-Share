@@ -1,0 +1,46 @@
+name: 投稿发布
+on:
+  issues:
+    types: [labeled]
+permissions:
+  contents: write
+  issues: write
+jobs:
+  publish:
+    if: github.event.label.name == 'approved'
+    runs-on: ubuntu-latest
+    steps:
+      - id: parse
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const body = context.payload.issue.body;
+            const getField = (label) => {
+              const regex = new RegExp(`### ${label}\\s*\\n\\s*(.+?)\\s*(?:\\n|$)`, 's');
+              const m = body.match(regex);
+              return m ? m[1].trim() : '未填写';
+            };
+            const submitter = getField('贡献者昵称');
+            const resourceTitle = getField('资源标题');
+            const content = getField('资源内容');
+            const isPaid = getField('是否收费');
+            const receiver = getField('收费归谁（如收费才填）');
+            const bodyText = `## 📦 ${resourceTitle}\n\n**贡献者**：${submitter}\n**是否收费**：${isPaid}\n${isPaid==='收费'?`**收费归**：${receiver}\n`:''}\n---\n\n${content}\n\n---\n> 来源 Issue：#${context.payload.issue.number}`;
+            core.setOutput('title', resourceTitle);
+            core.setOutput('body', bodyText);
+      - uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: ${{ steps.parse.outputs.title }}
+          body: ${{ steps.parse.outputs.body }}
+          draft: false
+          prerelease: false
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.update({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number, state: 'closed'
+            });
