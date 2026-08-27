@@ -13,27 +13,42 @@ jobs:
         with:
           script: |
             const body = context.payload.issue.body;
-            // 适配表单渲染的 "### 字段名" 格式
+
+            // 兼容："### 字段名" 或 "### 字段名："
             const getField = (label) => {
-              const regex = new RegExp(`### ${label}[\\s\\S]*?\\n\\n(.+?)(?:\\n|$)`, 's');
+              const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const regex = new RegExp(`###\\s*${escaped}\\s*:?\\s*\\n([\\s\\S]*?)(?=\\n###\\s|$)`, 'i');
               const m = body.match(regex);
               return m ? m[1].trim() : '未填写';
             };
+
             const submitter = getField('贡献者昵称');
             const title = getField('资源标题');
             const content = getField('资源内容');
             const isPaid = getField('是否收费');
             const receiver = getField('收费归谁');
-            
-            const releaseBody = `## 📦 ${title}\n\n**贡献者**：${submitter}\n**是否收费**：${isPaid}\n${isPaid==='收费'?`**收费归**：${receiver}\n`:''}\n---\n\n${content}\n\n---\n> 来源：#${context.payload.issue.number}`;
-            
-            // 生成绝对唯一的标签：时间戳 + run_id
+
+            const releaseBody = [
+              `## 📦 ${title}`,
+              ``,
+              `**贡献者**：${submitter}`,
+              `**是否收费**：${isPaid}`,
+              isPaid === '收费' ? `**收费归**：${receiver}` : '',
+              ``,
+              `---`,
+              ``,
+              `${content}`,
+              ``,
+              `---`,
+              `> 来源：#${context.payload.issue.number}`
+            ].filter(Boolean).join('\n');
+
             const uniqueTag = `v${Date.now()}-${context.runId}`;
-            
+
             core.setOutput('title', title);
             core.setOutput('body', releaseBody);
             core.setOutput('tag', uniqueTag);
-            
+
       - name: Create Release
         uses: actions/create-release@v1
         env:
