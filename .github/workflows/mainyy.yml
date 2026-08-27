@@ -1,0 +1,158 @@
+name: Sync Release to WordPress
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "要同步的 Release tag（留空=最新）"
+        required: false
+        type: string
+      status:
+        description: "发布状态"
+        required: false
+        default: "publish"
+        type: choice
+        options: [publish, draft, pending]
+
+permissions:
+  contents: read
+
+env:
+  WP_API_BASE: ${{ secrets.WP_API_BASE }}   # 例如 https://blogxzz.gt.tc/wp-json/wp/v2
+  LOGIN_PAGE:  ${{ secrets.WP_LOGIN_PAGE }}  # 例如 https://blogxzz.gt.tc/xzz2026-login-safety-404
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    if: |
+      secrets.WP_API_BASE != '' &&
+      secrets.WP_BASIC_USER != '' &&
+      secrets.WP_BASIC_PASS != ''
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Release
+        id: release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = context.payload.release?.tag_name || '${{ inputs.tag }}';
+            const rel = context.payload.release ||
+              (await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo:  context.repo.repo,
+                tag
+              })).data;
+            core.setOutput('tag',    rel.tag_name);
+            core.setOutput('title',  rel.name || rel.tag_name);
+            core.setOutput('body',   rel.body || '(无正文)');
+            core.setOutput('url',    rel.html_url);
+            core.setOutput('id',     String(rel.id));
+
+      - name: Sanity check
+        env:
+          USER: ${{ secrets.WP_BASIC_USER }}
+          PASS: ${{ secrets.WP_BASIC_PASS }}
+        run: |
+          set -euo pipefail
+          [[ "$WP_API_BASE" == https://* ]] || { echo "::error::WP_API_BASE 必须为 https"; exit 1; }
+          [[ "$LOGIN_PAGE"  == https://* ]] || { echo "::error::WP_LOGIN_PAGE 必须为 https"; exit 1; }
+          [[ -n "$USER" && -n "$PASS" ]]    || { echo "::error::凭证未配置"; exit 1; }
+          echo "auth scheme=Basic (HTTPS enforced) ✓"
+
+      - name: Post to WordPress (Basic Auth)
+        id: post
+        env:
+          TAG:      ${{ steps.release.outputs.tag }}
+          TITLE:    ${{ steps.release.outputs.title }}
+          BODY:     ${{ steps.release.outputs.body }}
+          RELURL:   ${{ steps.release.outputs.url }}
+          STATUS:   ${{ inputs.status || 'publish' }}
+          USER:     ${{ secrets.WP_BASIC_USER }}
+          PASS:     ${{ secrets.WP_BASIC_PASS }}
+        run: |
+          set -euo pipefail
+          mkdir -p build
+
+          python3 - "$WP_API_BASE" "$LOGIN_PAGE" "$USER" "$PASS" "$TAG" "$TITLE" "$BODY" "$RELURL" "$STATUS" <<'PY'
+          import os, sys, json, urllib.request, urllib.parse, urllib.error, base64
+
+          (api, login, user, pwd, SLUG, title, body, relurl, status) = sys.argv[1:10]
+          api = api.rstrip("/")
+
+          creds = base64.b64encode(f"{user}:{pwd}".encode()).decode()
+          H = {
+              "Authorization": f"Basic {creds}",
+              "Content-Type":  "application/json",
+              "Accept":        "application/json",
+          }
+
+          def call(method, path, payload=None):
+              url = f"{api}{path}"
+              data = json.dumps(payload).encode() if payload else None
+              req = urllib.request.Request(url, data=data, method=method, headers=H)
+              try:
+                  with urllib.request.urlopen(req, timeout=60) as r:
+                      return r.status, json.loads(r.read().decode() or "{}")
+              except urllib.error.HTTPError as e:
+                  err = e.read().decode()
+                  print(f"[ERROR] {method} {path} → {e.code}: {err[:500]}", file=sys.stderr)
+                  raise
+
+          # 登录页探测：Basic Auth 正确时访问受保护页面应返回 200
+          req = urllib.request.Request(login, headers=H)
+          try:
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  probe = r.status
+          except urllib.error.HTTPError as e:
+              probe = e.code
+          if probe == 401:
+              raise SystemExit("::error::Basic Auth 凭证无效（401），请检查专用账号")
+          print(f"[probe] {login} → {probe}")
+
+          # 去重：按 slug 查找已有文章，存在则更新
+          _, found = call("GET", f"/posts?slug={urllib.parse.quote(SLUG)}&per_page=1")
+          post_id = found[0]["id"] if found else None
+
+          content = (
+              f"<p><strong>来源 Release：</strong> <a href=\"{relurl}\">{title}</a></p>\n"
+              f"{body}"
+          )
+          payload = {"title": title, "slug": SLUG, "content": content, "status": status}
+
+          if post_id:
+              code, resp = call("PUT", f"/posts/{post_id}", payload)
+              action = "updated"
+          else:
+              code, resp = call("POST", "/posts", payload)
+              action = "created"
+
+          link = resp.get("link", "")
+          print(f"[done] {action} post id={resp.get('id')} → {link}")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"post_url={link}\n")
+              f.write(f"action={action}\n")
+          PY
+
+      - name: Summary
+        run: |
+          echo "## ✅ WordPress 同步完成" >> $GITHUB_STEP_SUMMARY
+          echo "- 文章地址：${{ steps.post.outputs.post_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 操作：${{ steps.post.outputs.action }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Prepare debug info
+        if: failure()
+        run: |
+          jq -n \
+            --arg tag    "${{ steps.release.outputs.tag }}" \
+            --arg title  "${{ steps.release.outputs.title }}" \
+            '{tag:$tag, title:$title, note:"凭证已省略"}' > build/debug.json
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: wordpress-debug
+          path: build/debug.json
