@@ -1,0 +1,121 @@
+
+name: Publish Release on Issue Close
+
+# 触发：任何 Issue 被关闭时
+on:
+  issues:
+    types: [closed]
+
+permissions:
+  contents: write   # 创建/更新 release 与上传 asset
+  issues: read      # 读取 issue 内容（默认 token 已有）
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # 可选：只处理带特定标签的 issue，避免所有关闭都发版
+    # if: contains(github.event.issue.labels.*.name, 'release')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 把所有信息一次性写入环境文件，供后续步骤读取
+      - name: Save issue context
+        run: |
+          echo '${{ toJson(github.event.issue) }}' > issue.json
+          echo "ISSUE_NUMBER=${{ github.event.issue.number }}" >> $GITHUB_ENV
+          echo "ISSUE_TITLE=${{ github.event.issue.title }}" >> $GITHUB_ENV
+          echo "REPO=${{ github.repository }}" >> $GITHUB_ENV
+
+      # 下载 Issue 及其评论中附带的文件（附件）
+      # GitHub 附件链接形如：https://github.com/owner/repo/files/1234567/filename.zip
+      - name: Download attachments from issue
+        id: download
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p issue_assets
+          python3 <<'EOF'
+          import json, os, re, subprocess, urllib.request, urllib.parse, pathlib
+
+          issue = json.load(open("issue.json"))
+          texts = [issue.get("body", "") or ""]
+          # 通过 gh cli 获取评论
+          try:
+              out = subprocess.run(
+                  ["gh", "issue", "view", str(os.environ["ISSUE_NUMBER"]),
+                   "--json", "comments"],
+                  capture_output=True, text=True, check=True
+              ).stdout
+              for c in json.loads(out).get("comments", []):
+                  texts.append(c.get("body", "") or "")
+          except Exception as e:
+              print("获取评论失败（忽略）:", e)
+
+          pat = re.compile(r"https://github\.com/[^/]+/[^/]+/files/\d+/[\S]+")
+          urls = set()
+          for t in texts:
+              for u in pat.findall(t):
+                  urls.add(u.split("?")[0].rstrip(")"))
+
+          dest = pathlib.Path("issue_assets")
+          downloaded = []
+          for u in urls:
+              fname = urllib.parse.unquote(os.path.basename(u))
+              if not fname or fname in downloaded:
+                  continue
+              req = urllib.request.Request(u, headers={
+                  "Authorization": "Bearer " + os.environ["GH_TOKEN"],
+                  "User-Agent": "publish-release-action",
+              })
+              try:
+                  with urllib.request.urlopen(req, timeout=60) as r, \
+                          open(dest / fname, "wb") as f:
+                      f.write(r.read())
+                  downloaded.append(fname)
+                  print("Downloaded:", fname)
+              except Exception as e:
+                  print("跳过", u, e)
+
+          pathlib.Path("assets.json").write_text(json.dumps(downloaded))
+          EOF
+
+      # 组装 Release Notes：issue 标题 + 正文 + 附件清单 + 链接回 issue
+      - name: Build release notes
+        run: |
+          python3 <<'EOF'
+          import json, os, pathlib
+          issue = json.load(open("issue.json"))
+          body = issue.get("body") or "(无描述)"
+          number = issue["number"]
+          title = issue.get("title", "")
+          url = issue.get("html_url", "")
+
+          notes = f"## {title}\n\n{body}\n\n**来源 Issue**: #{number} — {url}\n"
+
+          assets = json.load(open("assets.json"))
+          if assets:
+              notes += "\n### 附件（已一并发布到本 Release）\n"
+              for a in assets:
+                  notes += f"- {a}\n"
+          else:
+              notes += "\n（本 Issue 无附件）\n"
+
+          pathlib.Path("release_notes.md").write_text(notes)
+          print(notes)
+          EOF
+
+      # 创建 Release，tag 用 issue 编号保证唯一；附件一并上传
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: issue-${{ github.event.issue.number }}
+          name: ${{ github.event.issue.title }}
+          body_path: release_notes.md
+          files: |
+            issue_assets/*
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
