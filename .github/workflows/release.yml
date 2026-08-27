@@ -1,0 +1,37 @@
+name: 关闭即发布
+on:
+  issues:
+    types: [closed]
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - id: parse
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const body = context.payload.issue.body;
+            const getField = (id) => {
+              const regex = new RegExp(`### ${id}[\\s\\S]*?\\n\\n(.+?)(?:\\n|$)`, 's');
+              const m = body.match(regex);
+              return m ? m[1].trim() : '未填写';
+            };
+            const submitter = getField('贡献者昵称');
+            const title = getField('资源标题');
+            const content = getField('资源内容');
+            const isPaid = getField('是否收费');
+            const receiver = getField('收费归谁');
+            const releaseBody = `## 📦 ${title}\n\n**贡献者**：${submitter}\n**是否收费**：${isPaid}\n${isPaid==='收费'?`**收费归**：${receiver}\n`:''}\n---\n\n${content}\n\n---\n> 来源：#${context.payload.issue.number}`;
+            core.setOutput('title', title);
+            core.setOutput('body', releaseBody);
+      - uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: ${{ steps.parse.outputs.title }}
+          body: ${{ steps.parse.outputs.body }}
+          draft: false
+          prerelease: false
