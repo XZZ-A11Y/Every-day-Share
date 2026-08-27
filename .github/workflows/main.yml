@@ -1,0 +1,209 @@
+name: Interactive Release (选择 Issues 合并发布)
+
+# 手动触发：在 Actions 页面弹出输入面板
+# - version:   版本号（如 v1.2.0）
+# - issues:    要合并进本版本的 Issue 编号，逗号分隔（如 42,43,44）
+# - milestone: （可选）指定里程碑，自动纳入该里程碑下所有已关闭 Issue
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版本号（如 v1.2.0）"
+        required: true
+        type: string
+      issues:
+        description: "要合并进本版本的 Issue 编号，逗号分隔（如 42,43,44）"
+        required: false
+        type: string
+        default: ""
+      milestone:
+        description: "（可选）里程碑标题；填写后会自动纳入该里程碑下所有已关闭 Issue"
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: write   # 创建 Release
+  issues: read      # 读取 Issue 内容
+  pull-requests: read
+
+jobs:
+  # ===== 第 1 步：收集并展示"待发布清单"（确认面板）=====
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      issue_list: ${{ steps.collect.outputs.issue_list }}
+      version: ${{ steps.collect.outputs.version }}
+    steps:
+      - name: 校验输入
+        run: |
+          if [ -z "${{ github.event.inputs.issues }}" ] && [ -z "${{ github.event.inputs.milestone }}" ]; then
+            echo "::error::必须在 'issues' 或 'milestone' 中至少填一项"
+            exit 1
+          fi
+
+      - name: 收集 Issues
+        id: collect
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          ISSUES: ${{ github.event.inputs.issues }}
+          MILESTONE: ${{ github.event.inputs.milestone }}
+          COLLECT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          set -e
+          mkdir -p build
+          python3 << 'PYEOF'
+          import os, json, subprocess
+
+          repo = os.environ["REPO"]
+          issues_raw = os.environ.get("ISSUES", "").strip()
+          milestone = os.environ.get("MILESTONE", "").strip()
+          version = os.environ.get("COLLECT_VERSION", "").strip()
+
+          numbers = []
+          if issues_raw:
+              numbers = [n.strip() for n in issues_raw.split(",") if n.strip()]
+
+          collected = []
+          seen = set()
+
+          def fetch(number):
+              out = subprocess.run(
+                  ["gh", "issue", "view", number, "--repo", repo, "--json",
+                   "number,title,body,author,labels,state,url,comments"],
+                  capture_output=True, text=True, check=True
+              ).stdout
+              return json.loads(out)
+
+          for n in numbers:
+              if n not in seen:
+                  collected.append(fetch(n))
+                  seen.add(n)
+
+          if milestone:
+              lst = subprocess.run(
+                  ["gh", "issue", "list", "--repo", repo, "--milestone", milestone,
+                   "--state", "closed", "--json", "number"],
+                  capture_output=True, text=True, check=True
+              ).stdout
+              for item in json.loads(lst):
+                  n = str(item["number"])
+                  if n not in seen:
+                      collected.append(fetch(n))
+                      seen.add(n)
+
+          with open("build/issues.json", "w") as f:
+              json.dump(collected, f, ensure_ascii=False, indent=2)
+
+          print("\n" + "="*60)
+          print(f"  准备发布版本: {version}")
+          print(f"  合并 Issue 数量: {len(collected)}")
+          print("="*60)
+          for i in collected:
+              print(f"  - #{i['number']} {i['title']}  [{i['state']}]")
+          print("="*60)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"version={version}\n")
+              f.write(f"issue_list={' '.join(sorted(seen))}\n")
+          PYEOF
+
+      - name: 打印确认面板（请在日志 / Step Summary 中核对）
+        run: |
+          echo "## 📋 发布预览" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**版本**: \`${{ steps.collect.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Issue | 标题 | 状态 |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|------|------|" >> $GITHUB_STEP_SUMMARY
+          python3 -c "
+          import json
+          data=json.load(open('build/issues.json'))
+          for i in data:
+              print(f\"| #{i['number']} | {i['title']} | {i['state']} |\")
+          " >> $GITHUB_STEP_SUMMARY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issues-data
+          path: build/issues.json
+
+  # ===== 第 2 步：正式发布 =====
+  release:
+    needs: prepare
+    runs-on: ubuntu-latest
+    # 如需"人工点 Approve 才发布"，取消下一行注释并在 Settings→Environments 创建同名环境：
+    # environment: production-release
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: issues-data
+          path: build
+
+      - name: 下载 Issue 附件
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir -p release_assets
+          python3 << 'PYEOF'
+          import os, re, json, subprocess
+          data = json.load(open("build/issues.json"))
+          asset_dir = "release_assets"
+          pattern = re.compile(r"https://github\.com/[^/]+/[^/]+/files/\d+/[^\s)]+")
+          for issue in data:
+              texts = [issue.get("body", "")] + [c.get("body", "") for c in issue.get("comments", [])]
+              for text in texts:
+                  for url in pattern.findall(text or ""):
+                      name = url.rstrip("/").split("/")[-1]
+                      try:
+                          path = url.replace("https://github.com/", "")
+                          subprocess.run(["gh", "api", path, "--redirect",
+                                          "-o", os.path.join(asset_dir, name)], check=False)
+                      except Exception as e:
+                          print(f"下载失败 {url}: {e}")
+          print("附件列表:", os.listdir(asset_dir))
+          PYEOF
+
+      - name: 生成 Release Notes
+        id: notes
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          python3 << 'PYEOF'
+          import os, json
+          data = json.load(open("build/issues.json"))
+          lines = [f"## {os.environ['VERSION']}", "",
+                   f"本版本合并了 **{len(data)}** 个 Issue 的更新：", ""]
+          for i in data:
+              labels = ", ".join(l["name"] for l in i.get("labels", []))
+              lines.append(f"### #{i['number']} {i['title']}")
+              lines.append(f"**作者**: @{i.get('author',{}).get('login','')}  ")
+              if labels:
+                  lines.append(f"**标签**: {labels}  ")
+              body = (i.get("body") or "").strip()
+              if body:
+                  lines.append("")
+                  lines.append(body[:2000])
+              lines.append(f"\n→ 查看完整讨论：{i.get('url','')}")
+              lines.append("")
+              lines.append("---")
+              lines.append("")
+          with open("build/notes.md", "w") as f:
+              f.write("\n".join(lines))
+          PYEOF
+
+      - name: 创建 / 更新 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.version }}
+          name: ${{ needs.prepare.outputs.version }}
+          body_path: build/notes.md
+          files: release_assets/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
