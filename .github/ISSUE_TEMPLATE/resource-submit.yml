@@ -1,56 +1,38 @@
 name: 资源投稿
-description: 提交你想添加到资源库的内容
+description: 提交资源（关闭即发布）
 title: "[投稿] "
 labels: ["resource-request"]
-assignees: []
-
 body:
-  - type: markdown
-    attributes:
-      value: |
-        📚 投稿后管理员审核通过才会发布。请如实填写以下信息。
-
   - type: input
     id: submitter
     attributes:
       label: 贡献者昵称
-      description: 发布时会注明此名字
       placeholder: 你的昵称
     validations:
       required: true
-
   - type: input
     id: resource_title
     attributes:
       label: 资源标题
-      description: 发布时的标题
-      placeholder: 例如：四级高频词汇表 / PDF 学习资料合集
+      placeholder: 例如：四级高频词汇表
     validations:
       required: true
-
   - type: textarea
     id: resource_content
     attributes:
       label: 资源内容
-      description: 详细内容、链接、描述等
-      placeholder: |
-        内容描述、下载链接、使用方法等
+      placeholder: 描述、链接等
     validations:
       required: true
-
   - type: dropdown
     id: is_paid
     attributes:
       label: 是否收费
-      options:
-        - 免费
-        - 收费
+      options: ["免费", "收费"]
     validations:
       required: true
-
   - type: input
     id: payment_receiver
     attributes:
-      label: 收费归谁（如收费才填）
-      description: 收款方信息（如：投稿人本人 / 某个组织 / 特定账号）
-      placeholder: 例如：归投稿人本人 / 归某某基金会
+      label: 收费归谁（收费才填）
+      placeholder: 归投稿人本人
