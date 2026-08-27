@@ -1,0 +1,351 @@
+name: Release on Issue Close (Milestone-based)
+
+on:
+  # 方式1：关闭 Issue 自动触发
+  issues:
+    types: [closed]
+
+  # 方式2：手动触发，可在 Actions 页面输入参数
+  workflow_dispatch:
+    inputs:
+      milestone:
+        description: "Milestone 标题（如 v1.2.0），留空则自动用最新已关闭 milestone"
+        required: false
+        default: ""
+      version:
+        description: "手动指定 Release 版本号（如 v1.2.0），留空则使用 milestone 标题"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      # ============================================================
+      # 0. 准备：安装依赖
+      # ============================================================
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          pip install PyGithub requests
+
+      # ============================================================
+      # 1. 确定当前要发布的 Milestone
+      # ============================================================
+      - name: Determine milestone
+        id: ms
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { repo, owner } = context.repo;
+
+            // --- 手动触发时：优先用输入的 milestone ---
+            if (context.eventName === 'workflow_dispatch') {
+              let milestoneTitle = core.getInput('milestone');
+              const version = core.getInput('version');
+
+              // 如果没填 milestone，找最新已关闭的 milestone
+              if (!milestoneTitle) {
+                const { data: milestones } = await github.rest.issues.listMilestones({
+                  owner, repo, state: 'closed', per_page: 10
+                });
+                if (milestones.length === 0) {
+                  core.setFailed('没有已关闭的 milestone，请手动指定 milestone 参数');
+                  return;
+                }
+                milestoneTitle = milestones[0].title;
+                core.info(`自动选择最新已关闭 milestone: ${milestoneTitle}`);
+              }
+
+              // 查找 milestone 对象
+              const { data: allMs } = await github.rest.issues.listMilestones({
+                owner, repo, state: 'all', per_page: 100
+              });
+              const ms = allMs.find(m => m.title === milestoneTitle);
+              if (!ms) {
+                core.setFailed(`找不到 milestone: ${milestoneTitle}`);
+                return;
+              }
+
+              core.setOutput('milestone_title', ms.title);
+              core.setOutput('milestone_number', String(ms.number));
+              core.setOutput('version', version || ms.title);
+              return;
+            }
+
+            // --- 自动触发（issue closed）：取该 Issue 所属的 milestone ---
+            const issueNumber = context.issue.number;
+            const { data: issue } = await github.rest.issues.get({
+              owner, repo, issue_number: issueNumber
+            });
+
+            if (!issue.milestone) {
+              core.info(`Issue #${issueNumber} 没有关联 milestone，跳过发布`);
+              core.setOutput('skip', 'true');
+              return;
+            }
+
+            const ms = issue.milestone;
+            core.setOutput('milestone_title', ms.title);
+            core.setOutput('milestone_number', String(ms.number));
+            core.setOutput('version', ms.title);
+            core.setOutput('skip', 'false');
+
+      # 如果跳过（无 milestone），后续步骤全部跳过
+      - name: Check skip
+        if: steps.ms.outputs.skip == 'true'
+        run: |
+          echo "跳过：Issue 未关联 milestone"
+
+      # ============================================================
+      # 2. 收集该 Milestone 下所有已关闭的 Issue
+      # ============================================================
+      - name: Collect issues in milestone
+        if: steps.ms.outputs.skip != 'true'
+        id: collect
+        run: |
+          python3 << 'PYEOF'
+          import os, json, re, urllib.request
+          from github import Github
+
+          token = os.environ['GH_TOKEN']
+          repo_full = os.environ['GITHUB_REPOSITORY']
+          ms_number = os.environ['MILESTONE_NUMBER']
+
+          gh = Github(token)
+          repo = gh.get_repo(repo_full)
+
+          # 获取 milestone 下所有 closed issues
+          milestone = repo.get_milestone(int(ms_number))
+          issues = repo.get_issues(milestone=milestone, state='closed')
+
+          issue_data = []
+          for issue in issues:
+              # 跳过 PR（PR 也是 issue，但我们用 pull_request 判断）
+              if issue.pull_request:
+                  continue
+
+              # 获取评论
+              comments = []
+              for c in issue.get_comments():
+                  comments.append({
+                      'author': c.user.login,
+                      'body': c.body,
+                      'created_at': c.created_at.isoformat()
+                  })
+
+              issue_data.append({
+                  'number': issue.number,
+                  'title': issue.title,
+                  'body': issue.body or '',
+                  'url': issue.html_url,
+                  'author': issue.user.login,
+                  'labels': [l.name for l in issue.labels],
+                  'comments': comments,
+              })
+
+          # 写入文件供后续步骤使用
+          with open('issues_data.json', 'w', encoding='utf-8') as f:
+              json.dump(issue_data, f, ensure_ascii=False, indent=2)
+
+          print(f"收集到 {len(issue_data)} 个已关闭 Issue")
+          for i in issue_data:
+              print(f"  - #{i['number']} {i['title']}")
+
+          # 设置输出
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"count={len(issue_data)}\n")
+          PYEOF
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          MILESTONE_NUMBER: ${{ steps.ms.outputs.milestone_number }}
+          GITHUB_OUTPUT: ${{ github.output }}
+
+      # ============================================================
+      # 3. 下载所有 Issue 中的附件
+      # ============================================================
+      - name: Download attachments
+        if: steps.ms.outputs.skip != 'true'
+        id: download
+        run: |
+          mkdir -p release_assets
+
+          python3 << 'PYEOF'
+          import os, re, json, urllib.request, urllib.parse
+
+          with open('issues_data.json', 'r', encoding='utf-8') as f:
+              issues = json.load(f)
+
+          # 匹配 GitHub 附件链接
+          # 格式: https://github.com/owner/repo/files/1234567/filename.pdf
+          pattern = re.compile(
+              r'https://github\.com/[^/]+/[^/]+/files/\d+/([^\s\)\]]+)'
+          )
+
+          token = os.environ['GH_TOKEN']
+          downloaded = []
+
+          for issue in issues:
+              text = issue['body'] + '\n'
+              for c in issue['comments']:
+                  text += c['body'] + '\n'
+
+              urls = pattern.findall(text)
+              for url in set(urls):
+                  full_url = 'https://github.com/' + url
+                  filename = urllib.parse.unquote(os.path.basename(url))
+                  dest = f"release_assets/issue_{issue['number']}_{filename}"
+
+                  try:
+                      req = urllib.request.Request(full_url)
+                      req.add_header('Authorization', f'Bearer {token}')
+                      req.add_header('User-Agent', 'GitHub-Actions')
+                      with urllib.request.urlopen(req) as resp:
+                          with open(dest, 'wb') as out:
+                              out.write(resp.read())
+                      downloaded.append(dest)
+                      print(f"  ✓ {filename}")
+                  except Exception as e:
+                      print(f"  ✗ 下载失败: {filename} ({e})")
+
+          print(f"\n共下载 {len(downloaded)} 个附件")
+
+          # 列出 release_assets 目录内容
+          files = os.listdir('release_assets') if os.path.isdir('release_assets') else []
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              if files:
+                  f.write("assets=" + ",".join(files) + "\n")
+              else:
+                  f.write("assets=\n")
+          PYEOF
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_OUTPUT: ${{ github.output }}
+
+      # ============================================================
+      # 4. 生成 Release Notes
+      # ============================================================
+      - name: Generate Release Notes
+        if: steps.ms.outputs.skip != 'true'
+        id: notes
+        run: |
+          python3 << 'PYEOF'
+          import os, json
+
+          with open('issues_data.json', 'r', encoding='utf-8') as f:
+              issues = json.load(f)
+
+          milestone_title = os.environ['MILESTONE_TITLE']
+          version = os.environ['VERSION']
+          repo = os.environ['GITHUB_REPOSITORY']
+
+          lines = []
+          lines.append(f"## {milestone_title}")
+          lines.append("")
+          lines.append(f"本版本包含以下 {len(issues)} 个 Issue 的更新：")
+          lines.append("")
+
+          for issue in issues:
+              lines.append(f"### #{issue['number']} {issue['title']}")
+              lines.append(f"**作者**: @{issue['author']}")
+              lines.append("")
+
+              # Issue 正文（截断到 2000 字符避免过长）
+              body = issue['body'].strip()
+              if len(body) > 2000:
+                  body = body[:2000] + "\n\n…(内容过长已截断)"
+              lines.append(body)
+              lines.append("")
+
+              # 评论摘要
+              if issue['comments']:
+                  lines.append("**讨论**:")
+                  for c in issue['comments']:
+                      lines.append(f"- @{c['author']}: {c['body'][:200]}")
+                  lines.append("")
+
+              # 链接回 Issue
+              lines.append(f"→ [在 Issue #{issue['number']} 中查看完整讨论]({issue['url']})")
+              lines.append("")
+              lines.append("---")
+              lines.append("")
+
+          # 附件总览
+          assets_dir = 'release_assets'
+          if os.path.isdir(assets_dir):
+              files = os.listdir(assets_dir)
+              if files:
+                  lines.append("### 📎 附件")
+                  lines.append("")
+                  lines.append("以下文件已随本 Release 一并发布：")
+                  lines.append("")
+                  for fname in sorted(files):
+                      lines.append(f"- `{fname}`")
+                  lines.append("")
+
+          lines.append(f"**Full Changelog**: https://github.com/{repo}/compare/{version}...HEAD")
+
+          notes = "\n".join(lines)
+
+          # 写入文件
+          with open('release_notes.md', 'w', encoding='utf-8') as f:
+              f.write(notes)
+
+          print(notes[:500])
+          print("...")
+          PYEOF
+        env:
+          MILESTONE_TITLE: ${{ steps.ms.outputs.milestone_title }}
+          VERSION: ${{ steps.ms.outputs.version }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+      # ============================================================
+      # 5. 发布 / 更新 Release（幂等：已存在则更新）
+      # ============================================================
+      - name: Delete existing release if exists (for idempotency)
+        if: steps.ms.outputs.skip != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const tag = core.getInput('tag') || context.payload.inputs?.version || '';
+            // 尝试删除已存在的 release（如果存在）
+            try {
+              const { data: releases } = await github.rest.repos.listReleases({ owner, repo });
+              const existing = releases.find(r => r.tag_name === tag);
+              if (existing) {
+                await github.rest.repos.deleteRelease({ owner, repo, release_id: existing.id });
+                core.info(`已删除旧 Release: ${tag}`);
+              }
+            } catch (e) {
+              core.info(`无需删除旧 Release: ${e.message}`);
+            }
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        if: steps.ms.outputs.skip != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ms.outputs.version }}
+          name: ${{ steps.ms.outputs.milestone_title }}
+          body_path: release_notes.md
+          files: release_assets/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ============================================================
+      # 6. 发布后输出链接
+      # ============================================================
+      - name: Output Release URL
+        if: steps.ms.outputs.skip != 'true'
+        run: |
+          echo "✅ Release 已发布: https://github.com/${{ github.repository }}/releases/tag/${{ steps.ms.outputs.version }}"
