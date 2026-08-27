@@ -13,8 +13,9 @@ jobs:
         with:
           script: |
             const body = context.payload.issue.body;
-            const getField = (id) => {
-              const regex = new RegExp(`### ${id}[\\s\\S]*?\\n\\n(.+?)(?:\\n|$)`, 's');
+            // 适配表单渲染的 "### 字段名" 格式
+            const getField = (label) => {
+              const regex = new RegExp(`### ${label}[\\s\\S]*?\\n\\n(.+?)(?:\\n|$)`, 's');
               const m = body.match(regex);
               return m ? m[1].trim() : '未填写';
             };
@@ -23,14 +24,22 @@ jobs:
             const content = getField('资源内容');
             const isPaid = getField('是否收费');
             const receiver = getField('收费归谁');
+            
             const releaseBody = `## 📦 ${title}\n\n**贡献者**：${submitter}\n**是否收费**：${isPaid}\n${isPaid==='收费'?`**收费归**：${receiver}\n`:''}\n---\n\n${content}\n\n---\n> 来源：#${context.payload.issue.number}`;
+            
+            // 生成绝对唯一的标签：时间戳 + run_id
+            const uniqueTag = `v${Date.now()}-${context.runId}`;
+            
             core.setOutput('title', title);
             core.setOutput('body', releaseBody);
-      - uses: actions/create-release@v1
+            core.setOutput('tag', uniqueTag);
+            
+      - name: Create Release
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ github.run_number }}
+          tag_name: ${{ steps.parse.outputs.tag }}
           release_name: ${{ steps.parse.outputs.title }}
           body: ${{ steps.parse.outputs.body }}
           draft: false
