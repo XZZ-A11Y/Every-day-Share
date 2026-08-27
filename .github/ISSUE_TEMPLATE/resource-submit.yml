@@ -1,0 +1,62 @@
+name: 资源投稿
+description: 提交你想添加到资源库的内容
+title: "[投稿] "
+labels: ["resource-request"]
+assignees: []
+
+body:
+  - type: input
+    id: submitter
+    attributes:
+      label: 昵称
+      description: 选填，留空显示为匿名
+      placeholder: 你的昵称
+
+  - type: input
+    id: resource_title
+    attributes:
+      label: 资源标题
+      description: 一句话概括（如：单词 available / 文章链接 / 书籍推荐）
+      placeholder: 单词 available
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 资源分类
+      description: 选择这条内容属于哪个分类
+      options:
+        - 每日四级单词
+        - 每日六级单词
+        - 每日阅读
+        - 其他资源
+    validations:
+      required: true
+
+  - type: textarea
+    id: resource_content
+    attributes:
+      label: 要添加的内容
+      description: 详细内容（音标、释义、例句、链接、正文等）
+      placeholder: |
+        音标：/əˈveɪləbl/
+        释义：可获得的，有空的
+        例句：The book is available online.
+    validations:
+      required: true
+
+  - type: input
+    id: source_url
+    attributes:
+      label: 参考来源
+      description: 选填，参考资料链接
+      placeholder: https://...
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: 确认
+      options:
+        - label: 我确认此内容适合加入公开资源库
+          required: true
