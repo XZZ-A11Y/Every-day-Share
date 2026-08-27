@@ -1,0 +1,39 @@
+name: 资源投稿
+description: 提交你发现的优质资源
+title: "[资源投稿] "
+labels: ["resource-request"]
+body:
+  - type: input
+    id: nickname
+    attributes:
+      label: 昵称
+      description: 你的称呼
+      placeholder: 例如：小明
+    validations:
+      required: true
+  - type: input
+    id: title
+    attributes:
+      label: 资源标题
+      description: 资源的名称
+      placeholder: 例如：每日英语听力
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: 分类
+      options:
+        - 学习
+        - 影视
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: intro
+    attributes:
+      label: 简介
+      description: 简单介绍下这个资源
+      placeholder: 这个资源很棒，因为...
+    validations:
+      required: true
