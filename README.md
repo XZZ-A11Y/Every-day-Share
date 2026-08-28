@@ -1,8 +1,8 @@
 <p align="center">
   <img src="https://socialify.git.ci/XZZ-A11Y/Every-day-Share/image?font=Inter&language=1&name=1&owner=1&pattern=Transparent&stargazers=1&theme=Light" alt="Social Preview" width="800"/>
 </p>
-  
-  # Every-day-Share
+
+<div align="center">
   
   <p>开源、免费的日常资源分享与投稿发布平台</p>
   
