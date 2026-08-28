@@ -8,13 +8,13 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      # ① 解析 Issue 内容 + 计算下一个版本号
       - id: parse
         uses: actions/github-script@v6
         with:
           script: |
             const body = context.payload.issue.body;
 
-            // 兼容："### 字段名" 或 "### 字段名："
             const getField = (label) => {
               const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
               const regex = new RegExp(`###\\s*${escaped}\\s*:?\\s*\\n([\\s\\S]*?)(?=\\n###\\s|$)`, 'i');
@@ -27,6 +27,20 @@ jobs:
             const content = getField('资源内容');
             const isPaid = getField('是否收费');
             const receiver = getField('收费归谁');
+
+            // —— 计算下一个顺序版本号 ——
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+            let maxVer = 0;
+            for (const r of releases.data) {
+              const m = r.tag_name.match(/^v(\d+)$/);
+              if (m) maxVer = Math.max(maxVer, parseInt(m[1], 10));
+            }
+            const nextVer = maxVer + 1;
+            const tag = `v${nextVer}`;
 
             const releaseBody = [
               `## 📦 ${title}`,
@@ -43,13 +57,32 @@ jobs:
               `> 来源：#${context.payload.issue.number}`
             ].filter(Boolean).join('\n');
 
-            const uniqueTag = `v${Date.now()}-${context.runId}`;
+            // 写入 markdown 文件供下一步转 PDF
+            require('fs').writeFileSync('release_content.md', releaseBody);
 
             core.setOutput('title', title);
             core.setOutput('body', releaseBody);
-            core.setOutput('tag', uniqueTag);
+            core.setOutput('tag', tag);
+            core.setOutput('version', String(nextVer));
 
+      # ② 安装 PDF 转换工具（pandoc + xelatex + 中文字体）
+      - name: Install pandoc & latex
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y pandoc texlive-xetex texlive-lang-chinese fonts-noto-cjk
+
+      # ③ Markdown → PDF
+      - name: Convert Markdown to PDF
+        run: |
+          pandoc release_content.md \
+            -o "资源发布_v${{ steps.parse.outputs.version }}.pdf" \
+            --pdf-engine=xelatex \
+            -V CJKmainfont="Noto Sans CJK SC" \
+            -V geometry:margin=2cm
+
+      # ④ 创建 Release（先建空 Release，再用 upload-release-asset 挂 PDF）
       - name: Create Release
+        id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -59,3 +92,14 @@ jobs:
           body: ${{ steps.parse.outputs.body }}
           draft: false
           prerelease: false
+
+      # ⑤ 上传 PDF 作为 Release Asset
+      - name: Upload PDF Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: "./资源发布_v${{ steps.parse.outputs.version }}.pdf"
+          asset_name: "资源发布_v${{ steps.parse.outputs.version }}.pdf"
+          asset_content_type: application/pdf
