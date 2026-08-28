@@ -1,0 +1,24 @@
+============================================
+Giscus 配置说明
+============================================
+
+1. 打开 https://giscus.app 获取以下两个值：
+   - data-repo-id
+   - data-category-id
+
+2. 编辑 app.js，找到 loadGiscus() 函数，替换以下两行：
+     data-repo-id=""
+     data-category-id=""
+   填入你在 giscus.app 页面生成的实际值。
+
+   例如：
+     data-repo-id="R_kgDOT8c-6w"
+     data-category-id="DIC_kwDOT8c-684DEWIr"
+
+3. 确保：
+   - 仓库已开启 Discussions（Settings → General → Features）
+   - 已安装 Giscus App 并授权本仓库
+   - Discussions 分类类型为 General（或手动建好主题）
+
+4. 部署到 GitHub Pages 后访问公网地址测试留言功能。
+============================================

@@ -1,835 +1,100 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="dark">
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>唯远资源下载平台</title>
-<style>
-  /* ============ 主题变量 ============ */
-  :root[data-theme="dark"]{
-    --bg:#0f172a; --bg2:#1e293b; --card:#1e293b; --border:#334155;
-    --text:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#8b5cf6;
-    --green:#10b981; --orange:#f59e0b; --red:#ef4444; --hover:#233148;
-    --shadow:rgba(0,0,0,.3); --body-grad:linear-gradient(180deg,#0f172a 0%,#1e293b 100%);
-  }
-  :root[data-theme="light"]{
-    --bg:#f8fafc; --bg2:#ffffff; --card:#ffffff; --border:#e2e8f0;
-    --text:#0f172a; --muted:#64748b; --accent:#6366f1; --accent2:#8b5cf6;
-    --green:#10b981; --orange:#f59e0b; --red:#ef4444; --hover:#f1f5f9;
-    --shadow:rgba(0,0,0,.08); --body-grad:linear-gradient(180deg,#f8fafc 0%,#eef2f7 100%);
-  }
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
-    background:var(--body-grad);color:var(--text);min-height:100vh;line-height:1.6;transition:background .3s;
-  }
-  .container{max-width:1100px;margin:0 auto;padding:0 20px}
-  /* ============ Header ============ */
-  header{
-    background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.15));
-    border-bottom:1px solid var(--border);padding:48px 0 40px;text-align:center;position:relative;overflow:hidden;
-  }
-  #flowCanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
-  .header-content{position:relative;z-index:2}
-  header h1{font-size:32px;font-weight:800;letter-spacing:1px;margin-bottom:8px}
-  header h1 .brand{background:linear-gradient(135deg,#818cf8,#c4b5fd);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-  header .subtitle{color:var(--muted);font-size:15px}
-  .header-links{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:14px}
-  .header-links a{
-    display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(99,102,241,.15);
-    border:1px solid var(--border);border-radius:20px;color:#a5b4fc;text-decoration:none;font-size:13px;transition:.2s;
-  }
-  .header-links a:hover{background:rgba(99,102,241,.25);transform:translateY(-1px)}
-  /* ============ 主题切换按钮（右上角浮动）============ */
-  .theme-toggle{
-    position:absolute;top:20px;right:20px;width:40px;height:40px;border-radius:10px;
-    background:var(--bg2);border:1px solid var(--border);color:var(--text);cursor:pointer;
-    font-size:18px;display:flex;align-items:center;justify-content:center;transition:.2s;
-  }
-  .theme-toggle:hover{border-color:var(--accent);transform:scale(1.05)}
-  /* ============ Toolbar ============ */
-  .toolbar{
-    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding:20px 0;
-  }
-  .toolbar-left{display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex:1}
-  .stats{display:flex;gap:16px;flex-wrap:wrap}
-  .stat{font-size:13px;color:var(--muted)}
-  .stat b{color:var(--text);font-weight:600}
-  .search-box{
-    position:relative;flex:1;max-width:320px;min-width:200px;
-  }
-  .search-box input{
-    width:100%;padding:8px 32px 8px 32px;background:var(--bg2);border:1px solid var(--border);
-    border-radius:8px;color:var(--text);font-size:13px;outline:none;transition:.2s;
-  }
-  .search-box input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
-  .search-box .ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none}
-  .search-box .clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--muted);cursor:pointer;display:none;font-size:14px;background:none;border:none;padding:4px}
-  .search-box .clear:hover{color:var(--text)}
-  .toolbar-right{display:flex;gap:8px;align-items:center}
-  .tool-btn{
-    padding:8px 14px;background:var(--bg2);border:1px solid var(--border);
-    border-radius:8px;color:var(--text);cursor:pointer;font-size:13px;transition:.2s;
-    display:inline-flex;align-items:center;gap:6px;
-  }
-  .tool-btn:hover{border-color:var(--accent);background:var(--hover)}
-  .tool-btn:disabled{opacity:.5;cursor:not-allowed}
-  .tool-btn.active{border-color:var(--accent);background:rgba(99,102,241,.12)}
-  .sort-select{
-    padding:8px 12px;background:var(--bg2);border:1px solid var(--border);
-    border-radius:8px;color:var(--text);font-size:13px;cursor:pointer;outline:none;
-  }
-  /* ============ Status ============ */
-  #status{text-align:center;padding:60px 20px;color:var(--muted)}
-  .spinner{
-    width:36px;height:36px;margin:0 auto 16px;border:3px solid var(--border);
-    border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;
-  }
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .error-box{
-    max-width:520px;margin:0 auto;padding:24px;background:rgba(239,68,68,.08);
-    border:1px solid rgba(239,68,68,.3);border-radius:12px;
-  }
-  .error-box h3{color:#fca5a5;margin-bottom:8px}
-  /* ============ Release card ============ */
-  .release{margin-bottom:24px}
-  .release-card{
-    background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:.2s;
-  }
-  .release-card:hover{border-color:rgba(99,102,241,.4);box-shadow:0 8px 32px var(--shadow)}
-  .release-head{
-    padding:20px 24px;border-bottom:1px solid var(--border);
-    display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;
-  }
-  .release-titlewrap{flex:1;min-width:200px}
-  .release-tag{
-    display:inline-block;padding:3px 10px;background:linear-gradient(135deg,var(--accent),var(--accent2));
-    border-radius:6px;font-size:13px;font-weight:600;margin-bottom:8px;
-  }
-  .release-name{font-size:18px;font-weight:700;word-break:break-word}
-  .release-meta{font-size:12px;color:var(--muted);margin-top:6px;display:flex;gap:12px;flex-wrap:wrap}
-  .release-meta span{display:inline-flex;align-items:center;gap:4px}
-  .badge{
-    padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;
-    background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);
-  }
-  .badge.prerelease{background:rgba(245,158,11,.15);color:#fcd34d;border-color:rgba(245,158,11,.3)}
-  /* 折叠正文 */
-  .release-body{
-    padding:16px 24px;color:var(--muted);font-size:14px;overflow:hidden;
-    max-height:200px;position:relative;transition:max-height .3s;
-  }
-  .release-body.expanded{max-height:2000px}
-  .release-body a{color:#a5b4fc}
-  .release-body code{background:var(--bg);padding:1px 5px;border-radius:4px;font-size:12px}
-  .release-body pre{background:var(--bg);padding:12px;border-radius:8px;overflow-x:auto;margin:8px 0}
-  .release-body::after{content:"";position:absolute;bottom:0;left:0;right:0;height:40px;
-    background:linear-gradient(transparent,var(--card));pointer-events:none}
-  .release-body.expanded::after,.release-body.no-collapse::after{display:none}
-  .release-body.no-collapse{max-height:none}
-  .expand-btn{
-    display:block;margin:0 24px 8px auto;padding:4px 12px;background:none;border:1px solid var(--border);
-    border-radius:6px;color:var(--muted);cursor:pointer;font-size:12px;
-  }
-  .expand-btn:hover{color:var(--text);border-color:var(--accent)}
-  .assets{padding:16px 24px 24px;border-top:1px solid var(--border)}
-  .assets-title{font-size:13px;color:var(--muted);margin-bottom:12px;font-weight:600}
-  .asset-row{
-    display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
-    padding:10px 0;border-bottom:1px dashed var(--border);
-  }
-  .asset-row:last-of-type{border-bottom:0}
-  .asset-info{flex:1;min-width:160px;display:flex;align-items:center;gap:10px}
-  .file-icon{font-size:22px;flex-shrink:0;width:28px;text-align:center}
-  .asset-text{min-width:0;flex:1}
-  .asset-name{font-size:14px;font-weight:500;word-break:break-all}
-  .asset-size{font-size:12px;color:var(--muted);margin-top:2px}
-  .asset-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
-  .icon-btn{
-    width:34px;height:34px;border-radius:8px;background:var(--bg2);border:1px solid var(--border);
-    color:var(--muted);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:.2s;
-  }
-  .icon-btn:hover{color:var(--text);border-color:var(--accent);background:var(--hover)}
-  .download-btn{
-    display:inline-flex;align-items:center;gap:6px;padding:8px 16px;
-    background:linear-gradient(135deg,var(--green),#059669);color:#fff;
-    border:none;border-radius:8px;font-size:13px;font-weight:600;
-    text-decoration:none;cursor:pointer;transition:.2s;white-space:nowrap;
-  }
-  .download-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(16,185,129,.4)}
-  .download-btn.source{background:linear-gradient(135deg,var(--accent),var(--accent2))}
-  .download-btn.source:hover{box-shadow:0 4px 16px rgba(99,102,241,.4)}
-  .source-row{
-    display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;padding-top:14px;
-    border-top:1px solid var(--border);
-  }
-  /* ============ 回到顶部 ============ */
-  #backTop{
-    position:fixed;right:24px;bottom:24px;width:44px;height:44px;border-radius:12px;
-    background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;
-    font-size:20px;cursor:pointer;opacity:0;visibility:hidden;transition:.25s;z-index:50;
-    box-shadow:0 4px 20px rgba(99,102,241,.4);
-  }
-  #backTop.show{opacity:1;visibility:visible}
-  #backTop:hover{transform:translateY(-2px) scale(1.05)}
-  /* ============ 二维码弹窗 ============ */
-  .modal-mask{
-    position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;
-  }
-  .modal-mask.show{display:flex}
-  .modal-card{
-    background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;
-    max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);
-  }
-  .modal-card h3{font-size:16px;margin-bottom:4px}
-  .modal-card .modal-sub{font-size:12px;color:var(--muted);margin-bottom:16px;word-break:break-all}
-  .modal-card img{width:220px;height:220px;border-radius:10px;background:#fff;padding:8px}
-  .modal-card .modal-link{margin-top:14px;font-size:12px;color:var(--muted);word-break:break-all}
-  .modal-close{
-    margin-top:16px;padding:8px 20px;background:var(--bg2);border:1px solid var(--border);
-    border-radius:8px;color:var(--text);cursor:pointer;font-size:13px;
-  }
-  .modal-close:hover{border-color:var(--accent)}
-  /* ============ Toast ============ */
-  #toast{
-    position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(80px);
-    background:var(--card);border:1px solid var(--accent);color:var(--text);
-    padding:10px 20px;border-radius:10px;font-size:13px;box-shadow:0 8px 32px var(--shadow);
-    opacity:0;transition:.3s;z-index:120;pointer-events:none;
-  }
-  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  /* ============ Footer & Comments ============ */
-  footer{text-align:center;padding:32px 20px;color:var(--muted);font-size:13px;border-top:1px solid var(--border);margin-top:40px}
-  footer a{color:#a5b4fc;text-decoration:none}
-  .comments{max-width:1100px;margin:0 auto;padding:32px 20px}
-  .comments-title{font-size:20px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
-  .comments-title .cbadge{background:linear-gradient(135deg,var(--accent),var(--accent2));border:0;color:#fff;padding:3px 10px;border-radius:6px;font-size:12px}
-  .comments-sub{color:var(--muted);font-size:13px;margin-bottom:20px}
-  @media(max-width:600px){
-    header h1{font-size:24px}
-    .release-head{padding:16px}
-    .assets{padding:14px 16px 18px}
-    .search-box{max-width:none}
-    .theme-toggle{top:12px;right:12px}
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Every-day-Share · 资源库</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="Every-day-Share%20Banner.svg" type="image/svg+xml">
 </head>
 <body>
-<header>
-  <canvas id="flowCanvas"></canvas>
-  <button class="theme-toggle" id="themeToggle" title="切换主题">🌙</button>
-  <div class="container header-content">
-    <h1><span class="brand">唯远</span>资源下载平台</h1>
-    <p class="subtitle">聚合 GitHub 打包发布成果 · 一键下载</p>
-    <div class="header-links">
-      <a href="https://github.com/XZZ-A11Y/Every-day-Share" target="_blank" rel="noopener">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        仓库主页
-      </a>
-      <a href="https://github.com/XZZ-A11Y/Every-day-Share/releases.atom" target="_blank" rel="noopener">📡 RSS 订阅</a>
-      <a href="https://github.com/XZZ-A11Y/Every-day-Share/releases" target="_blank" rel="noopener">📋 Releases 列表</a>
-    </div>
-  </div>
-</header>
-
-<div class="container">
-  <div class="toolbar">
-    <div class="toolbar-left">
-      <div class="stats" id="stats"></div>
-    </div>
-    <div class="toolbar-right">
-      <div class="search-box">
-        <span class="ico">🔍</span>
-        <input type="text" id="searchInput" placeholder="搜索版本 / 名称 / 文件名…" />
-        <button class="clear" id="searchClear" title="清除">✕</button>
+  <div class="layout">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="logo">
+        <img src="Every-day-Share%20Banner.svg" alt="Banner" class="banner-img">
+        <h2>Every-day-Share</h2>
+        <p>开源日常资源分享</p>
       </div>
-      <select class="sort-select" id="sortSelect" title="排序">
-        <option value="newest">最新优先</option>
-        <option value="oldest">最早优先</option>
-        <option value="name">按版本号</option>
-      </select>
-      <button class="tool-btn" id="refreshBtn" title="重新加载">↻ 刷新</button>
-    </div>
+      <nav class="nav">
+        <button class="nav-btn active" data-tab="home">🏠 首页</button>
+        <button class="nav-btn" data-tab="releases">📦 资源发布</button>
+        <button class="nav-btn" data-tab="submit">✍️ 投稿</button>
+        <button class="nav-btn" data-tab="guestbook">💬 留言板</button>
+        <button class="nav-btn" data-tab="readme">📄 README</button>
+      </nav>
+      <div class="sidebar-footer">
+        <span>v10.0.0</span> · <a href="LICENSE">GPL-3.0</a>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="content">
+      <!-- 首页 -->
+      <section id="tab-home" class="tab-panel active">
+        <div class="hero">
+          <h1>开源、免费的日常资源分享与投稿发布平台</h1>
+          <div class="badges">
+            <span class="badge blue">release v10.0.0</span>
+            <span class="badge orange">license GPL-3.0</span>
+            <span class="badge green">downloads 10+</span>
+            <span class="badge purple">stars welcome</span>
+            <span class="badge brightgreen">build passing</span>
+          </div>
+          <p class="links">
+            🌐 <a href="https://xzz-a11y.github.io/Every-day-Share/" target="_blank">站点</a> ·
+            <a href="#tab-guestbook" onclick="switchTab('guestbook')">博客</a> ·
+            <a href="#tab-releases" onclick="switchTab('releases')">下载地址</a>
+          </p>
+        </div>
+        <div class="cards">
+          <div class="card">
+            <h3>📦 资源发布</h3>
+            <p>查看所有版本更新与资源下载</p>
+          </div>
+          <div class="card">
+            <h3>✍️ 投稿发布</h3>
+            <p>提交你的日常资源与想法</p>
+          </div>
+          <div class="card">
+            <h3>💬 留言互动</h3>
+            <p>基于 Giscus 的评论区</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 资源发布 -->
+      <section id="tab-releases" class="tab-panel">
+        <h2>📦 资源发布 (Releases)</h2>
+        <div class="list-container" id="release-list"></div>
+      </section>
+
+      <!-- 投稿 -->
+      <section id="tab-submit" class="tab-panel">
+        <h2>✍️ 资源投稿</h2>
+        <p>提交内容将自动创建 GitHub Issue（标签：resource-request）</p>
+        <form id="submit-form" class="form">
+          <input type="text" id="sub-title" placeholder="资源标题" required>
+          <textarea id="sub-desc" placeholder="资源描述 / 链接 / 说明" rows="5" required></textarea>
+          <button type="submit" class="btn">提交投稿 (跳转 GitHub)</button>
+        </form>
+      </section>
+
+      <!-- 留言板 -->
+      <section id="tab-guestbook" class="tab-panel">
+        <h2>💬 留言板</h2>
+        <p class="tip">注：公网环境加载 Giscus，本地可能有 CORS 提示</p>
+        <div id="giscus-container"></div>
+      </section>
+
+      <!-- README -->
+      <section id="tab-readme" class="tab-panel">
+        <h2>📄 项目说明 (README)</h2>
+        <div class="readme-content" id="readme-content"></div>
+      </section>
+    </main>
   </div>
-  <div id="status"></div>
-  <div id="releases"></div>
-</div>
 
-<footer>
-  <div class="container">
-    数据源：<a href="https://github.com/XZZ-A11Y/Every-day-Share/releases" target="_blank" rel="noopener">GitHub Releases API</a> ·
-    唯远资源下载平台 · 静态部署
-  </div>
-</footer>
-
-<section class="comments">
-  <div class="comments-title">💬 评论区 <span class="cbadge">Giscus</span></div>
-  <p class="comments-sub">基于 GitHub Discussions，登录 GitHub 账号即可参与讨论。</p>
-  <script src="https://giscus.app/client.js"
-          data-repo="XZZ-A11Y/Every-day-Share"
-          data-repo-id="R_kgDOT8c-6w"
-          data-category="Announcements"
-          data-category-id="DIC_kwDOT8c-684DDp1J"
-          data-mapping="pathname"
-          data-strict="0"
-          data-reactions-enabled="1"
-          data-emit-metadata="1"
-          data-input-position="bottom"
-          data-theme="preferred_color_scheme"
-          data-lang="zh-CN"
-          crossorigin="anonymous"
-          async>
-  </script>
-</section>
-
-<button id="backTop" title="回到顶部">↑</button>
-
-<div class="modal-mask" id="qrModal">
-  <div class="modal-card">
-    <h3>扫码下载</h3>
-    <p class="modal-sub" id="qrName"></p>
-    <img id="qrImg" alt="二维码" />
-    <p class="modal-link" id="qrLink"></p>
-    <button class="modal-close" id="qrClose">关闭</button>
-  </div>
-</div>
-
-<div id="toast"></div>
-
-<script>
-(function(){
-  "use strict";
-  var REPO = "XZZ-A11Y/Every-day-Share";
-  var API  = "https://api.github.com/repos/" + REPO + "/releases?per_page=100";
-
-  var statusEl  = document.getElementById("status");
-  var listEl    = document.getElementById("releases");
-  var statsEl   = document.getElementById("stats");
-  var btn       = document.getElementById("refreshBtn");
-  var searchInput = document.getElementById("searchInput");
-  var searchClear = document.getElementById("searchClear");
-  var sortSelect  = document.getElementById("sortSelect");
-  var themeToggle = document.getElementById("themeToggle");
-  var backTop   = document.getElementById("backTop");
-  var qrModal   = document.getElementById("qrModal");
-  var qrImg     = document.getElementById("qrImg");
-  var qrName    = document.getElementById("qrName");
-  var qrLink    = document.getElementById("qrLink");
-  var qrClose   = document.getElementById("qrClose");
-  var toastEl   = document.getElementById("toast");
-
-  /* ============ 工具函数 ============ */
-  function fmtSize(bytes){
-    if(!bytes && bytes!==0) return "";
-    if(bytes < 1024) return bytes + " B";
-    if(bytes < 1048576) return (bytes/1024).toFixed(1) + " KB";
-    if(bytes < 1073741824) return (bytes/1048576).toFixed(1) + " MB";
-    return (bytes/1073741824).toFixed(2) + " GB";
-  }
-  function fmtDate(iso){
-    if(!iso) return "";
-    var d = new Date(iso);
-    if(isNaN(d)) return iso;
-    var pad = function(n){ return n<10?"0"+n:n; };
-    return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+" "+pad(d.getHours())+":"+pad(d.getMinutes());
-  }
-  function escapeHtml(s){
-    if(s==null) return "";
-    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-  }
-  // 文件类型图标
-  function fileIcon(name){
-    if(!name) return "📄";
-    var ext = (name.split(".").pop()||"").toLowerCase();
-    if(["exe","msi","appx","msix"].indexOf(ext)>=0) return "⚙️";
-    if(["zip","7z","rar","gz","tar","bz2","xz"].indexOf(ext)>=0) return "🗜️";
-    if(["apk","aab","xapk"].indexOf(ext)>=0) return "📱";
-    if(["dmg","pkg"].indexOf(ext)>=0) return "🍎";
-    if(["deb","rpm","snap","flatpak"].indexOf(ext)>=0) return "🐧";
-    if(["iso","img"].indexOf(ext)>=0) return "💿";
-    if(["pdf"].indexOf(ext)>=0) return "📕";
-    if(["doc","docx"].indexOf(ext)>=0) return "📘";
-    if(["xls","xlsx","csv"].indexOf(ext)>=0) return "📗";
-    if(["ppt","pptx"].indexOf(ext)>=0) return "📙";
-    if(["png","jpg","jpeg","gif","svg","webp","bmp"].indexOf(ext)>=0) return "🖼️";
-    if(["mp4","mkv","avi","mov","webm"].indexOf(ext)>=0) return "🎬";
-    if(["mp3","wav","flac","ogg"].indexOf(ext)>=0) return "🎵";
-    if(["txt","md","log"].indexOf(ext)>=0) return "📝";
-    if(["json","xml","yml","yaml","toml","ini","conf"].indexOf(ext)>=0) return "🗂️";
-    if(["js","ts","py","java","c","cpp","cs","go","rs","rb","php","sh","bat"].indexOf(ext)>=0) return "💻";
-    if(["ttf","otf","woff","woff2"].indexOf(ext)>=0) return "🔤";
-    return "📦";
-  }
-  // Markdown 渲染
-  function renderMd(md){
-    if(!md) return "";
-    var esc = md.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    esc = esc.replace(/```([\s\S]*?)```/g, function(_,c){ return "<pre><code>"+c.replace(/^\n/,"")+"</code></pre>"; });
-    esc = esc.replace(/`([^`]+)`/g, "<code>$1</code>");
-    esc = esc.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-    esc = esc.replace(/^### (.+)$/gm, "<h4>$1</h4>");
-    esc = esc.replace(/^## (.+)$/gm, "<h3>$1</h3>");
-    esc = esc.replace(/^# (.+)$/gm, "<h3>$1</h3>");
-    esc = esc.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-    esc = esc.replace(/^[-*] (.+)$/gm, "<li>$1</li>");
-    esc = esc.replace(/(<li>[\s\S]*?<\/li>)/g, "<ul>$1</ul>");
-    esc = esc.replace(/\n{2,}/g, "</p><p>");
-    esc = "<p>"+esc+"</p>";
-    esc = esc.replace(/<p><h([34])>/g, "<h$1>").replace(/<\/h([34])><\/p>/g, "</h$1>");
-    esc = esc.replace(/<p><pre>/g,"<pre>").replace(/<\/pre><\/p>/g,"</pre>");
-    esc = esc.replace(/<p><ul>/g,"<ul>").replace(/<\/ul><\/p>/g,"</ul>");
-    return esc;
-  }
-  // Toast 提示
-  var toastTimer;
-  function toast(msg){
-    toastEl.textContent = msg;
-    toastEl.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function(){ toastEl.classList.remove("show"); }, 2000);
-  }
-  // 复制文本
-  function copyText(text){
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(text).then(function(){ toast("✓ 已复制下载链接"); }, function(){ fallbackCopy(text); });
-    } else { fallbackCopy(text); }
-  }
-  function fallbackCopy(text){
-    var ta = document.createElement("textarea");
-    ta.value = text; ta.style.position="fixed"; ta.style.opacity="0";
-    document.body.appendChild(ta); ta.select();
-    try{ document.execCommand("copy"); toast("✓ 已复制下载链接"); }catch(e){ toast("复制失败"); }
-    document.body.removeChild(ta);
-  }
-
-  /* ============ 状态显示 ============ */
-  function showLoading(){
-    statusEl.innerHTML = '<div class="spinner"></div><p>正在从 GitHub 拉取发布数据…</p>';
-    listEl.innerHTML = ""; statsEl.innerHTML = "";
-  }
-  function showError(msg, detail){
-    statusEl.innerHTML = '<div class="error-box"><h3>⚠ ' + msg + '</h3>'+(detail?'<p style="margin-top:6px;font-size:13px;color:var(--muted)">'+detail+'</p>':'')+'</div>';
-  }
-  function showEmpty(){
-    statusEl.innerHTML =
-      '<div style="max-width:520px;margin:0 auto;padding:32px;background:rgba(99,102,241,.06);border:1px solid var(--border);border-radius:12px">'+
-      '<div style="font-size:48px;margin-bottom:12px">📭</div>'+
-      '<h3 style="font-size:18px;margin-bottom:8px">暂无发布内容</h3>'+
-      '<p>该仓库目前还没有任何 Release。当仓库所有者在 GitHub 上发布新版本并上传打包成果后，此页面会自动展示并生成下载按钮。</p>'+
-      '<p style="margin-top:14px;font-size:13px">仓库地址：<a href="https://github.com/'+REPO+'/releases/new" target="_blank" rel="noopener" style="color:#a5b4fc">前往创建第一个发布 →</a></p>'+
-      '</div>';
-  }
-  function showNoResult(){
-    statusEl.innerHTML =
-      '<div style="max-width:520px;margin:0 auto;padding:32px;background:rgba(245,158,11,.06);border:1px solid var(--border);border-radius:12px">'+
-      '<div style="font-size:40px;margin-bottom:8px">🔍</div>'+
-      '<h3 style="font-size:16px;margin-bottom:6px">没有匹配的结果</h3>'+
-      '<p style="font-size:13px;color:var(--muted)">试试更换关键词或清除搜索。</p></div>';
-  }
-
-  /* ============ 数据与渲染 ============ */
-  var allReleases = [];
-  var loading = false;
-
-  function render(releases){
-    statusEl.innerHTML = "";
-    if(!releases || !releases.length){ showEmpty(); return; }
-    var assetCount = 0, totalBytes = 0;
-    for(var i=0;i<releases.length;i++){
-      var as = releases[i].assets||[];
-      assetCount += as.length;
-      for(var j=0;j<as.length;j++) totalBytes += as[j].size||0;
-    }
-    statsEl.innerHTML =
-      '<span class="stat">发布：<b>'+releases.length+'</b></span>'+
-      '<span class="stat">文件：<b>'+assetCount+'</b></span>'+
-      '<span class="stat">总大小：<b>'+fmtSize(totalBytes)+'</b></span>';
-    var html = "";
-    for(var i=0; i<releases.length; i++){
-      html += renderCard(releases[i]);
-    }
-    listEl.innerHTML = html;
-    bindCardEvents();
-  }
-
-  function renderCard(r){
-    var assets = r.assets || [];
-    var badge = r.prerelease ? '<span class="badge prerelease">预发布</span>'
-              : r.draft ? '<span class="badge prerelease">草稿</span>' : "";
-    var card = '<section class="release"><div class="release-card">';
-    card += '<div class="release-head"><div class="release-titlewrap">';
-    card += '<span class="release-tag">v'+escapeHtml(r.tag_name||r.name||"#"+r.id)+'</span> '+badge;
-    card += '<div class="release-name">'+escapeHtml(r.name||r.tag_name||"未命名发布")+'</div>';
-    card += '<div class="release-meta">'+
-            '<span>📅 '+fmtDate(r.published_at||r.created_at)+'</span>'+
-            '<span>🏷 '+escapeHtml(r.tag_name||"-")+'</span>'+
-            (r.author?'<span>👤 '+escapeHtml(r.author.login)+'</span>':'')+
-            '</div></div></div>';
-    if(r.body){
-      var bodyHtml = renderMd(r.body);
-      card += '<div class="release-body" data-collapsed="1">'+bodyHtml+'</div>';
-      card += '<button class="expand-btn" data-action="expand">展开全文 ▾</button>';
-    }
-    if(assets.length){
-      card += '<div class="assets"><div class="assets-title">打包成果 ('+assets.length+')</div>';
-      for(var k=0;k<assets.length;k++){
-        var a = assets[k];
-        card += '<div class="asset-row"><div class="asset-info">'+
-                '<span class="file-icon">'+fileIcon(a.name)+'</span>'+
-                '<span class="asset-text">'+
-                '<div class="asset-name">'+escapeHtml(a.name)+'</div>'+
-                '<div class="asset-size">'+fmtSize(a.size)+' · 下载 '+a.download_count+' 次</div>'+
-                '</span></div>'+
-                '<div class="asset-actions">'+
-                '<button class="icon-btn" data-action="qr" data-url="'+escapeHtml(a.browser_download_url)+'" data-name="'+escapeHtml(a.name)+'" title="二维码">📱</button>'+
-                '<button class="icon-btn" data-action="copy" data-url="'+escapeHtml(a.browser_download_url)+'" title="复制链接">🔗</button>'+
-                '<a class="download-btn" href="'+escapeHtml(a.browser_download_url)+'" target="_blank" rel="noopener">⬇ 下载</a>'+
-                '</div></div>';
-      }
-      card += '</div>';
-      card += '<div class="assets" style="border-top:1px solid var(--border);padding-top:14px"><div class="source-row">'+
-              '<a class="download-btn source" href="'+escapeHtml(r.zipball_url)+'" target="_blank" rel="noopener">⬇ Source code (zip)</a>'+
-              '<a class="download-btn source" href="'+escapeHtml(r.tarball_url)+'" target="_blank" rel="noopener">⬇ Source code (tar.gz)</a>'+
-              '</div></div>';
-    } else {
-      card += '<div class="assets"><div class="assets-title">该发布未附带打包文件，可下载源码归档：</div>';
-      card += '<div class="source-row">'+
-              '<a class="download-btn source" href="'+escapeHtml(r.zipball_url)+'" target="_blank" rel="noopener">⬇ Source code (zip)</a>'+
-              '<a class="download-btn source" href="'+escapeHtml(r.tarball_url)+'" target="_blank" rel="noopener">⬇ Source code (tar.gz)</a>'+
-              '</div></div>';
-    }
-    card += '</div></section>';
-    return card;
-  }
-
-  // 卡片内事件绑定
-  function bindCardEvents(){
-    // 展开正文
-    var expandBtns = listEl.querySelectorAll('[data-action="expand"]');
-    for(var i=0;i<expandBtns.length;i++){
-      (function(btn){
-        btn.addEventListener("click", function(){
-          var body = btn.previousElementSibling;
-          if(!body) return;
-          var collapsed = body.getAttribute("data-collapsed")==="1";
-          if(collapsed){
-            body.classList.add("expanded");
-            body.setAttribute("data-collapsed","0");
-            btn.textContent = "收起 ▴";
-          } else {
-            body.classList.remove("expanded");
-            body.setAttribute("data-collapsed","1");
-            btn.textContent = "展开全文 ▾";
-          }
-        });
-      })(expandBtns[i]);
-    }
-    // 自动判断是否需要折叠按钮
-    var bodies = listEl.querySelectorAll(".release-body");
-    for(var j=0;j<bodies.length;j++){
-      (function(b){
-        // 延迟测量高度
-        setTimeout(function(){
-          if(b.scrollHeight <= 200){
-            b.classList.add("no-collapse");
-            var btn = b.nextElementSibling;
-            if(btn && btn.getAttribute("data-action")==="expand") btn.style.display="none";
-          }
-        },0);
-      })(bodies[j]);
-    }
-    // 复制链接
-    var copyBtns = listEl.querySelectorAll('[data-action="copy"]');
-    for(var k=0;k<copyBtns.length;k++){
-      copyBtns[k].addEventListener("click", function(){
-        copyText(this.getAttribute("data-url"));
-      });
-    }
-    // 二维码
-    var qrBtns = listEl.querySelectorAll('[data-action="qr"]');
-    for(var m=0;m<qrBtns.length;m++){
-      qrBtns[m].addEventListener("click", function(){
-        var url = this.getAttribute("data-url");
-        var name = this.getAttribute("data-name");
-        qrName.textContent = name;
-        qrLink.textContent = url;
-        qrImg.src = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=" + encodeURIComponent(url);
-        qrModal.classList.add("show");
-      });
-    }
-  }
-
-  /* ============ 搜索 + 排序 ============ */
-  function applyFilter(){
-    if(!allReleases.length) return;
-    var q = searchInput.value.trim().toLowerCase();
-    var sort = sortSelect.value;
-    var list = allReleases.slice();
-    // 排序
-    if(sort === "oldest"){
-      list.sort(function(a,b){ return new Date(a.published_at||a.created_at) - new Date(b.published_at||b.created_at); });
-    } else if(sort === "name"){
-      list.sort(function(a,b){ return (a.tag_name||"").localeCompare(b.tag_name||"", undefined, {numeric:true}); });
-    } else { // newest
-      list.sort(function(a,b){ return new Date(b.published_at||b.created_at) - new Date(a.published_at||a.created_at); });
-    }
-    // 搜索
-    if(q){
-      list = list.filter(function(r){
-        var hay = ((r.name||"")+" "+(r.tag_name||"")+" "+(r.body||"")).toLowerCase();
-        var assets = r.assets||[];
-        for(var i=0;i<assets.length;i++){
-          hay += " "+(assets[i].name||"").toLowerCase();
-        }
-        return hay.indexOf(q)>=0;
-      });
-    }
-    if(list.length === 0){
-      listEl.innerHTML = "";
-      showNoResult();
-    } else {
-      render(list);
-    }
-  }
-
-  /* ============ 加载数据 ============ */
-  function load(){
-    if(loading) return;
-    loading = true; btn.disabled = true; showLoading();
-    fetch(API, {headers:{"Accept":"application/vnd.github+json"}})
-      .then(function(resp){
-        if(!resp.ok){
-          return resp.json().then(function(j){ throw new Error(j.message||("HTTP "+resp.status)); }, function(){ throw new Error("HTTP "+resp.status); });
-        }
-        return resp.json();
-      })
-      .then(function(data){
-        allReleases = data || [];
-        applyFilter();
-      })
-      .catch(function(err){
-        allReleases = [];
-        var msg = err && err.message ? err.message : String(err);
-        if(/404/.test(msg)){
-          showError("仓库不存在或无访问权限","请确认仓库名称 XZZ-A11Y/Every-day-Share 是否正确，以及仓库是否为 public。");
-        } else if(/403|rate limit/i.test(msg)){
-          showError("GitHub API 速率受限","未认证请求每小时限 60 次。请稍后再试，或在 GitHub 登录后访问。");
-        } else {
-          showError("加载失败", msg);
-        }
-      })
-      .finally(function(){ loading = false; btn.disabled = false; });
-  }
-
-  /* ============ 主题切换 ============ */
-  function applyTheme(t){
-    document.documentElement.setAttribute("data-theme", t);
-    themeToggle.textContent = t === "dark" ? "🌙" : "☀️";
-    // 同步 giscus 主题
-    var frame = document.querySelector("iframe.giscus-frame");
-    if(frame && frame.contentWindow){
-      frame.contentWindow.postMessage({ giscus:{ setConfig:{ theme:t } } }, "https://giscus.app");
-    }
-    // 文字流动特效颜色刷新（下一帧生效）
-    if(window.__flowTextRefresh) setTimeout(window.__flowTextRefresh, 0);
-  }
-  function initTheme(){
-    var saved = "dark";
-    try{ saved = localStorage.getItem("wy-theme") || "dark"; }catch(e){}
-    applyTheme(saved);
-  }
-  themeToggle.addEventListener("click", function(){
-    var cur = document.documentElement.getAttribute("data-theme");
-    var next = cur === "dark" ? "light" : "dark";
-    try{ localStorage.setItem("wy-theme", next); }catch(e){}
-    applyTheme(next);
-  });
-
-  /* ============ 回到顶部 ============ */
-  window.addEventListener("scroll", function(){
-    if(window.pageYOffset > 400) backTop.classList.add("show");
-    else backTop.classList.remove("show");
-  });
-  backTop.addEventListener("click", function(){
-    window.scrollTo({top:0, behavior:"smooth"});
-  });
-
-  /* ============ 二维码弹窗关闭 ============ */
-  qrClose.addEventListener("click", function(){ qrModal.classList.remove("show"); });
-  qrModal.addEventListener("click", function(e){ if(e.target === qrModal) qrModal.classList.remove("show"); });
-  document.addEventListener("keydown", function(e){ if(e.key === "Escape") qrModal.classList.remove("show"); });
-
-  /* ============ 事件绑定 ============ */
-  btn.addEventListener("click", load);
-  var searchTimer;
-  searchInput.addEventListener("input", function(){
-    searchClear.style.display = this.value ? "block" : "none";
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(applyFilter, 200);
-  });
-  searchClear.addEventListener("click", function(){
-    searchInput.value = ""; searchClear.style.display = "none"; applyFilter(); searchInput.focus();
-  });
-  sortSelect.addEventListener("change", applyFilter);
-
-  /* ============ 文字流动特效 ============ */
-  function initFlowText(){
-    var canvas = document.getElementById("flowCanvas");
-    if(!canvas) return;
-    var ctx = canvas.getContext("2d");
-    var header = canvas.parentElement;
-    var dpr = Math.min(window.devicePixelRatio||1, 2);
-    var particles = [];
-    var words = ["CREATE","CODE","BUILD","SHIP","DESIGN","DEVELOP","DREAM","SHARE","OPEN","WRITE","LEARN","CRAFT","RELEASE","DEPLOY","ITERATE","INNOVATE"];
-    var mouse = {x:-9999, y:-9999, px:-9999, py:-9999, dx:0, dy:0, active:false};
-    var rafId = null;
-
-    function resize(){
-      var rect = header.getBoundingClientRect();
-      var w = rect.width, h = rect.height;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = w+"px";
-      canvas.style.height = h+"px";
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-      initParticles(w, h);
-    }
-
-    function initParticles(w, h){
-      particles = [];
-      var fontSize = 13;
-      var gapX = 92, gapY = 40;
-      var cols = Math.ceil(w / gapX) + 1;
-      var rows = Math.ceil(h / gapY) + 1;
-      var offX = (w - (cols-1)*gapX)/2;
-      var offY = (h - (rows-1)*gapY)/2;
-      ctx.font = "600 "+fontSize+"px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
-      for(var i=0;i<rows;i++){
-        for(var j=0;j<cols;j++){
-          var ox = offX + j*gapX;
-          var oy = offY + i*gapY;
-          particles.push({
-            ox: ox, oy: oy,
-            x: ox, y: oy,
-            vx: 0, vy: 0,
-            text: words[(i*cols+j) % words.length],
-            size: fontSize
-          });
-        }
-      }
-    }
-
-    function onMouseMove(e){
-      var rect = canvas.getBoundingClientRect();
-      var nx = e.clientX - rect.left;
-      var ny = e.clientY - rect.top;
-      mouse.dx = nx - mouse.px;
-      mouse.dy = ny - mouse.py;
-      mouse.px = nx; mouse.py = ny;
-      mouse.x = nx; mouse.y = ny;
-      mouse.active = true;
-    }
-    function onMouseLeave(){
-      mouse.active = false;
-      mouse.x = -9999; mouse.y = -9999;
-    }
-
-    function step(){
-      var w = canvas.width/dpr, h = canvas.height/dpr;
-      ctx.clearRect(0,0,w,h);
-      var mx = mouse.x, my = mouse.y;
-      var R = 160;          // 影响半径
-      var pushStrength = 2.2;
-      var flowStrength = 0.9; // 跟随鼠标移动方向的力
-      var spring = 0.025;    // 回弹刚度
-      var damping = 0.86;    // 阻尼
-      // 鼠标移动方向力随时间衰减
-      var fdx = mouse.dx, fdy = mouse.dy;
-      mouse.dx *= 0.9; mouse.dy *= 0.9;
-      var isLight = document.documentElement.getAttribute("data-theme")==="light";
-      var accent = isLight ? "#6366f1" : "#818cf8";
-      var muted = isLight ? "rgba(100,116,139,0.4)" : "rgba(148,163,184,0.5)";
-      for(var i=0;i<particles.length;i++){
-        var p = particles[i];
-        var dx = p.x - mx, dy = p.y - my;
-        var d2 = dx*dx + dy*dy;
-        if(mouse.active && d2 < R*R){
-          var d = Math.sqrt(d2) || 0.001;
-          var force = (1 - d/R);
-          // 推开
-          p.vx += (dx/d) * force * pushStrength;
-          p.vy += (dy/d) * force * pushStrength;
-          // 跟随鼠标移动方向（流动感）
-          p.vx += fdx * force * flowStrength * 0.15;
-          p.vy += fdy * force * flowStrength * 0.15;
-        }
-        // 弹簧回归原位
-        p.vx += (p.ox - p.x) * spring;
-        p.vy += (p.oy - p.y) * spring;
-        p.vx *= damping;
-        p.vy *= damping;
-        p.x += p.vx;
-        p.y += p.vy;
-        // 离原位越远越亮
-        var off = Math.hypot(p.x - p.ox, p.y - p.oy);
-        var t = Math.min(off/60, 1);
-        ctx.font = "600 "+p.size+"px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        if(t < 0.02){
-          ctx.fillStyle = muted;
-        } else {
-          // 从 muted 过渡到 accent
-          ctx.fillStyle = blend(muted, accent, t);
-        }
-        ctx.fillText(p.text, p.x, p.y);
-      }
-      rafId = requestAnimationFrame(step);
-    }
-
-    function blend(c1, c2, t){
-      // c1 形如 "rgba(r,g,b,a)" 或 "#rrggbb"；c2 "#rrggbb"
-      var a = parseColor(c1), b = hexToRgb(c2);
-      var r = Math.round(a[0]+(b[0]-a[0])*t);
-      var g = Math.round(a[1]+(b[1]-a[1])*t);
-      var bl = Math.round(a[2]+(b[2]-a[2])*t);
-      var al = a[3]+(1-a[3])*t;
-      return "rgba("+r+","+g+","+bl+","+al.toFixed(3)+")";
-    }
-    function parseColor(c){
-      var m = c.match(/rgba?\(([^)]+)\)/);
-      if(m){
-        var p = m[1].split(",").map(function(x){return parseFloat(x);});
-        return [p[0]||0,p[1]||0,p[2]||0, p[3]==null?1:p[3]];
-      }
-      return hexToRgb(c).concat(1);
-    }
-    function hexToRgb(h){
-      h = h.replace("#","");
-      if(h.length===3) h = h.split("").map(function(c){return c+c;}).join("");
-      return [parseInt(h.substr(0,2),16), parseInt(h.substr(2,2),16), parseInt(h.substr(4,2),16), 1];
-    }
-
-    // 监听 header 区域（鼠标在 header 内才触发）
-    header.addEventListener("mousemove", onMouseMove);
-    header.addEventListener("mouseleave", onMouseLeave);
-    var resizeTimer;
-    window.addEventListener("resize", function(){
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(function(){ resize(); }, 150);
-    });
-    // 主题切换时颜色自动跟随 CSS 变量
-    resize();
-    step();
-    // 暴露给主题切换
-    window.__flowTextRefresh = resize;
-  }
-
-  /* ============ 启动 ============ */
-  initTheme();
-  initFlowText();
-  load();
-})();
-</script>
+  <script src="app.js"></script>
 </body>
 </html>
