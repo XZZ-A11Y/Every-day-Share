@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://xzz-a11y.github.io/Every-day-Share/index.html" alt="https://socialify.git.ci/XZZ-A11Y/Every-day-Share/image?font=Inter&language=1&name=1&owner=1&pattern=Transparent&stargazers=1&theme=Light" width="600"/>
+  <img src="https://xzz-a11y.github.io/Every-day-Share/index.html" alt=["https://socialify.git.ci/XZZ-A11Y/Every-day-Share/image?font=Inter&language=1&name=1&owner=1&pattern=Transparent&stargazers=1&theme=Light"](https://socialify.git.ci/XZZ-A11Y/Every-day-Share/image?font=Inter&language=1&name=1&owner=1&pattern=Transparent&stargazers=1&theme=Light) width="600"/>
   
   # Every-day-Share
   
