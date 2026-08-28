@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://xzz-a11y.github.io/Every-day-Share/index.html" alt="Every-day-Share Banner" width="600"/>
+  <img src="https://xzz-a11y.github.io/Every-day-Share/index.html" alt="Every-day-Share%20Banner.svg" width="600"/>
   
   # Every-day-Share
   
