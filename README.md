@@ -1,5 +1,6 @@
-<div align="center">
-  <img src="https://xzz-a11y.github.io/Every-day-Share/index.html" alt=https://socialify.git.ci/XZZ-A11Y/Every-day-Share/image?font=Inter&language=1&name=1&owner=1&pattern=Transparent&stargazers=1&theme=Light width="600"/>
+<p align="center">
+  <img src="https://socialify.gitboy.ci/XZZ-A11Y/Every-day-Share/image?font=Inter&language=1&name=1&owner=1&pattern=Transparent&stargazers=1&theme=Light" alt="Social Preview" width="800"/>
+</p>
   
   # Every-day-Share
   
