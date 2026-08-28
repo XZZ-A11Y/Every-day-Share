@@ -67,4 +67,5 @@
 
 - GitHub 仓库：https://github.com/XZZ-A11Y/Every-day-Share
 - 官方站点：https://xzz-a11y.github.io/Every-day-Share/
+- 官方留言板：
 - 关联博客：https://blogxzz.gt.tc
