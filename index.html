@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>暂停服务 · 半盏潮汐</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: radial-gradient(circle at 30% 20%, #f2f7ff 0%, #dfe8f2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            color: #13294b;
+        }
+
+        .card {
+            max-width: 590px;
+            width: 100%;
+            background: rgba(255, 255, 250, 0.82);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 74px;
+            box-shadow: 0 35px 70px -24px rgba(27, 46, 85, 0.22), 0 6px 18px rgba(0, 0, 0, 0.02);
+            padding: 48px 40px 38px;
+            text-align: center;
+            border: 1px solid rgba(242, 244, 251, 0.7);
+            transition: all 0.2s ease;
+        }
+
+        /* 图标 */
+        .glow-icon {
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .glow-icon figure {
+            background: #ffffffde;
+            width: 108px;
+            height: 108px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 18px 32px -16px rgba(31, 67, 138, 0.12), 0 0 0 1px rgba(196, 215, 243, 0.3);
+        }
+
+        .glow-icon svg {
+            width: 64px;
+            height: 64px;
+            fill: none;
+            stroke: #264b8a;
+            stroke-width: 1.6;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        h1 {
+            font-size: 30px;
+            font-weight: 630;
+            letter-spacing: -0.022em;
+            color: #082036;
+            margin-bottom: 6px;
+            line-height: 1.15;
+        }
+
+        .sub-message {
+            font-size: 16px;
+            font-weight: 390;
+            color: #385177;
+            margin-bottom: 28px;
+            background: rgba(187, 210, 241, 0.14);
+            padding: 6px 20px;
+            border-radius: 92px;
+            display: inline-block;
+            border: 1px solid rgba(191, 211, 239, 0.4);
+        }
+
+        /* 预计恢复时间卡片 —— 突出 1月20日 + 日/时 */
+        .recovery-block {
+            background: #f2f7fe;
+            border-radius: 128px;
+            padding: 24px 20px 20px;
+            margin: 10px 0 18px;
+            border: 1px solid #d4e0f2;
+            box-shadow: inset 0 3px 8px rgba(37, 69, 124, 0.02);
+        }
+
+        .recovery-label {
+            font-size: 15px;
+            font-weight: 450;
+            letter-spacing: 0.018em;
+            color: #386291;
+            margin-bottom: 10px;
+        }
+
+        .recovery-date-large {
+            font-size: 46px;
+            font-weight: 660;
+            letter-spacing: 2px;
+            color: #032144;
+            line-height: 1.2;
+            background: #ffffffcc;
+            padding: 4px 28px;
+            border-radius: 180px;
+            display: inline-block;
+            box-shadow: 0 6px 14px rgba(38, 70, 133, 0.04);
+            margin-bottom: 16px;
+            border: 1px solid #dce7fa;
+        }
+
+        .countdown-flex {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px 28px;
+            flex-wrap: wrap;
+            background: rgba(228, 240, 255, 0.2);
+            padding: 10px 14px;
+            border-radius: 116px;
+            backdrop-filter: blur(2px);
+        }
+
+        .countdown-item {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+
+        .countdown-number {
+            font-size: 34px;
+            font-weight: 570;
+            color: #042445;
+            background: white;
+            padding: 0 14px;
+            border-radius: 86px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            min-width: 64px;
+            display: inline-block;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            border: 1px solid #e3edfb;
+        }
+
+        .countdown-label {
+            font-size: 18px;
+            font-weight: 440;
+            color: #325885;
+            margin-left: 2px;
+        }
+
+        .separator-dot {
+            color: #98b2d6;
+            font-weight: 280;
+            font-size: 28px;
+        }
+
+        /* 署名区域 */
+        .signature-area {
+            margin: 30px 0 4px;
+            padding: 12px 0 4px;
+            border-top: 1px solid rgba(162, 185, 218, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .signature {
+            font-size: 24px;
+            font-weight: 480;
+            color: #103157;
+            letter-spacing: 5px;
+            background: rgba(226, 239, 255, 0.3);
+            padding: 6px 36px;
+            border-radius: 170px;
+            backdrop-filter: blur(2px);
+            border: 1px solid #cbdaf3;
+            display: inline-block;
+        }
+
+        .signature-sub {
+            font-size: 13px;
+            color: #577299;
+            letter-spacing: 1.6px;
+            margin-top: 6px;
+            font-weight: 330;
+        }
+
+        .extra-note {
+            margin: 18px 0 6px;
+            font-size: 14px;
+            color: #436188;
+            background: rgba(213, 228, 249, 0.25);
+            padding: 8px 22px;
+            border-radius: 112px;
+            display: inline-block;
+            border: 1px dashed #bed1ec;
+        }
+
+        .footer-company {
+            margin-top: 24px;
+            font-size: 12.5px;
+            color: #6882aa;
+            letter-spacing: 0.3px;
+            opacity: 0.65;
+        }
+
+        @media (max-width: 520px) {
+            .card {
+                padding: 32px 18px 28px;
+                border-radius: 54px;
+            }
+            h1 {
+                font-size: 24px;
+            }
+            .recovery-date-large {
+                font-size: 34px;
+                padding: 2px 18px;
+            }
+            .countdown-number {
+                font-size: 26px;
+                min-width: 48px;
+                padding: 0 10px;
+            }
+            .countdown-label {
+                font-size: 16px;
+            }
+            .signature {
+                font-size: 20px;
+                padding: 4px 24px;
+                letter-spacing: 3px;
+            }
+            .glow-icon figure {
+                width: 84px;
+                height: 84px;
+            }
+            .glow-icon svg {
+                width: 50px;
+                height: 50px;
+            }
+        }
+
+        /* 彻底隐藏任何留言/评论相关元素 */
+        [class*="comment"], [id*="comment"], [class*="reply"], [id*="reply"],
+        [class*="message"], [id*="message"], textarea, input[type="text"],
+        .comment-form, #respond, .comments-area, .commentlist, .pingback,
+        .trackback, .leave-reply, .comment-reply-link, #cancel-comment-reply-link {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            width: 0 !important;
+            overflow: hidden !important;
+            position: absolute !important;
+            top: -9999px !important;
+            left: -9999px !important;
+            pointer-events: none !important;
+            opacity: 0 !important;
+        }
+        body::after, body::before, .card::after, .card::before {
+            content: none !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card" role="main" aria-labelledby="pause-heading">
+    <!-- 潮汐月亮图标 -->
+    <div class="glow-icon">
+        <figure>
+            <svg viewBox="0 0 76 76" xmlns="http://www.w3.org/2000/svg">
+                <path d="M38 18 C48 18 56 26 56 38 C56 50 48 58 38 58 C33 58 28 56 24 52 C31 54 40 50 40 42 C40 34 34 28 26 28 C24 28 22 28.5 20 29 C22 22 29 18 38 18Z" stroke="currentColor" stroke-width="1.8" fill="rgba(71,114,193,0.07)"/>
+                <path d="M28 42 L32 46 L44 34" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path d="M58 14 L63 9 M60 16 L66 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.5"/>
+                <path d="M12 60 L7 66 M14 63 L9 69" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.5"/>
+                <circle cx="51" cy="20" r="2.5" fill="#2f57a3" opacity="0.15"/>
+                <circle cx="20" cy="48" r="2" fill="#2f57a3" opacity="0.1"/>
+            </svg>
+        </figure>
+    </div>
+
+    <h1 id="pause-heading">潮汐搁浅 · 服务休憩</h1>
+    <div class="sub-message">深度维护 · 直至新月</div>
+
+    <!-- 预计恢复时间：1月20日 + 剩余 X日 X时 (动态计算) -->
+    <div class="recovery-block">
+        <div class="recovery-label">⏳ 预计恢复时间</div>
+        <div class="recovery-date-large">1 月 20 日</div>
+
+        <!-- 倒计时显示：XX日 XX时 (基于当前时间至1月20日) -->
+        <div class="countdown-flex" id="countdownContainer">
+            <div class="countdown-item">
+                <span class="countdown-number" id="daysDisplay">--</span>
+                <span class="countdown-label">日</span>
+            </div>
+            <span class="separator-dot">·</span>
+            <div class="countdown-item">
+                <span class="countdown-number" id="hoursDisplay">--</span>
+                <span class="countdown-label">时</span>
+            </div>
+        </div>
+        <div style="font-size: 13px; color: #557099; margin-top: 10px; letter-spacing: 0.5px;">🌊 潮汐时刻 · 耐心等候</div>
+    </div>
+
+    <!-- 署名：半盏潮汐 (无留言) -->
+    <div class="signature-area">
+        <div class="signature">半盏潮汐</div>
+        <div class="signature-sub">· 静 默 如 海 ·</div>
+    </div>
+
+    <div class="extra-note">
+        ✦ 维护期间留言板与评论通道暂停 ✦
+    </div>
+
+    <div class="footer-company">
+        半盏潮汐 · 潮间带工作室
+    </div>
+</div>
+
+<script>
+    (function() {
+        // 目标日期：2027年1月20日 00:00 (可根据需要调整具体时刻，这里设为当天零点)
+        // 注意：年份使用当前年份+1，若当前日期已过1月20日则自动切换到下一年
+        const now = new Date();
+        let targetYear = now.getFullYear();
+        // 如果今年1月20日已经过去，则设置为明年
+        const jan20ThisYear = new Date(targetYear, 0, 20, 0, 0, 0); // 月份0表示一月
+        if (now > jan20ThisYear) {
+            targetYear += 1;
+        }
+        const targetDate = new Date(targetYear, 0, 20, 0, 0, 0); // 1月20日 00:00
+
+        const daysEl = document.getElementById('daysDisplay');
+        const hoursEl = document.getElementById('hoursDisplay');
+
+        function updateCountdown() {
+            const current = new Date();
+            let diff = targetDate - current;
+
+            if (diff <= 0) {
+                // 如果已过1月20日，显示 0日0时 (或者可以再切到下一年，但这里保持0)
+                daysEl.textContent = '0';
+                hoursEl.textContent = '0';
+                return;
+            }
+
+            const totalHours = Math.floor(diff / (1000 * 60 * 60));
+            const days = Math.floor(totalHours / 24);
+            const hours = totalHours % 24;
+
+            daysEl.textContent = String(days);
+            hoursEl.textContent = String(hours).padStart(2, '0');
+        }
+
+        updateCountdown();
+        setInterval(updateCountdown, 1000 * 60); // 每分钟更新一次 (无需每秒刷新)
+        // 首次立即更新，之后每分钟同步
+    })();
+</script>
+
+</body>
+</html>
