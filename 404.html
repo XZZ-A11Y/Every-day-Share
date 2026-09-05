@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>404 · 潮汐未至 · 半盏潮汐</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f4f7fc;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            color: #2c405c;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 淡色网格 */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(166, 192, 223, 0.12) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(166, 192, 223, 0.12) 1px, transparent 1px);
+            background-size: 48px 48px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* 淡色光晕 */
+        .glow-orb {
+            position: fixed;
+            width: 340px;
+            height: 340px;
+            background: radial-gradient(circle at 40% 40%, rgba(176, 202, 235, 0.20), transparent 70%);
+            border-radius: 50%;
+            filter: blur(70px);
+            z-index: 0;
+            pointer-events: none;
+            animation: floatGlow 16s ease-in-out infinite alternate;
+        }
+        .glow-orb.second {
+            width: 270px;
+            height: 270px;
+            background: radial-gradient(circle at 60% 60%, rgba(208, 183, 237, 0.15), transparent 70%);
+            bottom: 5%;
+            right: 8%;
+            animation-delay: -7s;
+        }
+
+        @keyframes floatGlow {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+            100% { transform: translate(-20px, 15px) scale(1.1); opacity: 1; }
+        }
+
+        .card {
+            position: relative;
+            z-index: 1;
+            max-width: 740px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.70);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 56px;
+            padding: 56px 48px 44px;
+            border: 1px solid rgba(174, 198, 228, 0.25);
+            box-shadow: 0 24px 48px -20px rgba(32, 52, 84, 0.12), 0 4px 12px rgba(164, 186, 216, 0.04);
+            text-align: center;
+        }
+
+        .error-code {
+            font-size: 150px;
+            font-weight: 730;
+            letter-spacing: -6px;
+            color: #304e74;
+            line-height: 1;
+            text-shadow: 0 4px 20px rgba(115, 148, 194, 0.06);
+            margin-bottom: 6px;
+            opacity: 0.75;
+        }
+
+        .error-sub {
+            font-size: 22px;
+            color: #537392;
+            font-weight: 380;
+            margin-bottom: 20px;
+            letter-spacing: 3px;
+        }
+
+        .divider {
+            width: 64px;
+            height: 2px;
+            background: rgba(130, 163, 201, 0.25);
+            margin: 0 auto 24px;
+            border-radius: 4px;
+        }
+
+        .description {
+            font-size: 18px;
+            color: #426184;
+            line-height: 1.8;
+            max-width: 460px;
+            margin: 0 auto 28px;
+            font-weight: 380;
+        }
+
+        .btn-home {
+            display: inline-block;
+            background: rgba(109, 153, 204, 0.10);
+            color: #2f5580;
+            border: 1px solid rgba(151, 181, 216, 0.25);
+            padding: 14px 44px;
+            border-radius: 900px;
+            font-size: 17px;
+            font-weight: 460;
+            text-decoration: none;
+            transition: all 0.15s;
+            backdrop-filter: blur(4px);
+            letter-spacing: 0.4px;
+        }
+
+        .btn-home:hover {
+            background: rgba(119, 163, 215, 0.18);
+            border-color: rgba(169, 196, 228, 0.4);
+            color: #1a3e63;
+        }
+
+        .signature-404 {
+            margin-top: 38px;
+            font-size: 20px;
+            letter-spacing: 6px;
+            color: #6181a8;
+            opacity: 0.65;
+            font-weight: 380;
+        }
+
+        .footer-404 {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #7592b5;
+            letter-spacing: 0.6px;
+        }
+
+        @media (max-width: 520px) {
+            .card {
+                padding: 36px 22px 30px;
+                border-radius: 40px;
+            }
+            .error-code {
+                font-size: 105px;
+                letter-spacing: -4px;
+            }
+            .error-sub {
+                font-size: 18px;
+            }
+            .btn-home {
+                padding: 12px 30px;
+                font-size: 15px;
+            }
+            .signature-404 {
+                font-size: 17px;
+                letter-spacing: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="glow-orb" style="top: 2%; left: 8%;"></div>
+    <div class="glow-orb second"></div>
+
+    <div class="card">
+        <div class="error-code">404</div>
+        <div class="error-sub">PAGE NOT FOUND</div>
+        <div class="divider"></div>
+        <div class="description">
+            这片海域暂时没有你要找的东西<br>
+            或许它随着潮汐漂去了别处
+        </div>
+        <a href="https://xzz-a11y.github.io/Every-day-Share/" class="btn-home" target="_blank" rel="noopener noreferrer">返回首页 · 半盏潮汐</a>
+        <div class="signature-404">半盏潮汐</div>
+        <div class="footer-404">· 潮间带工作室 ·</div>
+    </div>
+</body>
+</html>
