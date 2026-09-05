@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>暂停服务 · 半盏潮汐</title>
+    <title>半盏潮汐 · 学业暂泊</title>
+    <!-- 字体与基础样式 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
@@ -16,358 +17,338 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: radial-gradient(circle at 30% 20%, #f2f7ff 0%, #dfe8f2 100%);
+            background: #f5f7fb;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 24px;
-            color: #13294b;
+            color: #1a2639;
         }
 
-        .card {
-            max-width: 590px;
+        /* 博客卡片外观 */
+        .blog-card {
+            max-width: 780px;
             width: 100%;
-            background: rgba(255, 255, 250, 0.82);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-radius: 74px;
-            box-shadow: 0 35px 70px -24px rgba(27, 46, 85, 0.22), 0 6px 18px rgba(0, 0, 0, 0.02);
-            padding: 48px 40px 38px;
-            text-align: center;
-            border: 1px solid rgba(242, 244, 251, 0.7);
+            background: #ffffff;
+            border-radius: 40px;
+            box-shadow: 0 25px 50px -16px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.02);
+            padding: 40px 42px 36px;
             transition: all 0.2s ease;
+            border: 1px solid #edf1f9;
         }
 
-        /* 图标 */
-        .glow-icon {
-            margin-bottom: 18px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .glow-icon figure {
-            background: #ffffffde;
-            width: 108px;
-            height: 108px;
-            border-radius: 999px;
+        /* 博客头部 */
+        .blog-header {
             display: flex;
             align-items: center;
-            justify-content: center;
-            box-shadow: 0 18px 32px -16px rgba(31, 67, 138, 0.12), 0 0 0 1px rgba(196, 215, 243, 0.3);
-        }
-
-        .glow-icon svg {
-            width: 64px;
-            height: 64px;
-            fill: none;
-            stroke: #264b8a;
-            stroke-width: 1.6;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-        }
-
-        h1 {
-            font-size: 30px;
-            font-weight: 630;
-            letter-spacing: -0.022em;
-            color: #082036;
-            margin-bottom: 6px;
-            line-height: 1.15;
-        }
-
-        .sub-message {
-            font-size: 16px;
-            font-weight: 390;
-            color: #385177;
-            margin-bottom: 28px;
-            background: rgba(187, 210, 241, 0.14);
-            padding: 6px 20px;
-            border-radius: 92px;
-            display: inline-block;
-            border: 1px solid rgba(191, 211, 239, 0.4);
-        }
-
-        /* 预计恢复时间卡片 —— 突出 1月20日 + 日/时 */
-        .recovery-block {
-            background: #f2f7fe;
-            border-radius: 128px;
-            padding: 24px 20px 20px;
-            margin: 10px 0 18px;
-            border: 1px solid #d4e0f2;
-            box-shadow: inset 0 3px 8px rgba(37, 69, 124, 0.02);
-        }
-
-        .recovery-label {
-            font-size: 15px;
-            font-weight: 450;
-            letter-spacing: 0.018em;
-            color: #386291;
-            margin-bottom: 10px;
-        }
-
-        .recovery-date-large {
-            font-size: 46px;
-            font-weight: 660;
-            letter-spacing: 2px;
-            color: #032144;
-            line-height: 1.2;
-            background: #ffffffcc;
-            padding: 4px 28px;
-            border-radius: 180px;
-            display: inline-block;
-            box-shadow: 0 6px 14px rgba(38, 70, 133, 0.04);
-            margin-bottom: 16px;
-            border: 1px solid #dce7fa;
-        }
-
-        .countdown-flex {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 18px 28px;
+            gap: 14px;
+            margin-bottom: 24px;
             flex-wrap: wrap;
-            background: rgba(228, 240, 255, 0.2);
-            padding: 10px 14px;
-            border-radius: 116px;
-            backdrop-filter: blur(2px);
         }
 
-        .countdown-item {
+        .avatar {
+            width: 56px;
+            height: 56px;
+            background: #e3eaf5;
+            border-radius: 28px;
             display: flex;
-            align-items: baseline;
-            gap: 6px;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            font-weight: 340;
+            color: #23487a;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            border: 1px solid #d4e0f0;
         }
 
-        .countdown-number {
-            font-size: 34px;
-            font-weight: 570;
-            color: #042445;
-            background: white;
-            padding: 0 14px;
-            border-radius: 86px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
-            min-width: 64px;
+        .blog-title-group {
+            flex: 1;
+        }
+
+        .blog-title {
+            font-size: 26px;
+            font-weight: 640;
+            letter-spacing: -0.3px;
+            color: #0b203b;
+            line-height: 1.2;
+        }
+
+        .blog-sub {
+            font-size: 14px;
+            color: #597294;
+            font-weight: 370;
+            margin-top: 2px;
+        }
+
+        .status-badge {
+            background: #f1f4fb;
+            border-radius: 60px;
+            padding: 6px 18px 6px 20px;
+            font-size: 13px;
+            font-weight: 450;
+            color: #435f83;
+            border: 1px solid #dce5f2;
+            white-space: nowrap;
+        }
+        .status-badge::before {
+            content: '';
             display: inline-block;
-            text-align: center;
-            font-variant-numeric: tabular-nums;
-            border: 1px solid #e3edfb;
+            width: 8px;
+            height: 8px;
+            background: #b0c7e0;
+            border-radius: 50%;
+            margin-right: 10px;
+            vertical-align: middle;
         }
 
-        .countdown-label {
-            font-size: 18px;
-            font-weight: 440;
-            color: #325885;
-            margin-left: 2px;
+        /* 博客正文区域 */
+        .blog-post {
+            padding: 8px 0 12px;
         }
 
-        .separator-dot {
-            color: #98b2d6;
-            font-weight: 280;
-            font-size: 28px;
+        .post-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #122b4a;
+            margin-bottom: 14px;
+            line-height: 1.3;
         }
 
-        /* 署名区域 */
-        .signature-area {
-            margin: 30px 0 4px;
-            padding: 12px 0 4px;
-            border-top: 1px solid rgba(162, 185, 218, 0.2);
+        .post-meta {
+            font-size: 14px;
+            color: #687f9f;
+            margin-bottom: 18px;
+            border-bottom: 1px solid #edf2fa;
+            padding-bottom: 16px;
             display: flex;
-            flex-direction: column;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .post-content {
+            font-size: 16px;
+            line-height: 1.7;
+            color: #1f3149;
+        }
+
+        .post-content p {
+            margin-bottom: 18px;
+        }
+
+        .post-content strong {
+            color: #123159;
+            font-weight: 530;
+        }
+
+        /* 两个按钮：共享资源 + 法律提醒（作为警示框） */
+        .action-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin: 28px 0 22px;
             align-items: center;
         }
 
-        .signature {
-            font-size: 24px;
-            font-weight: 480;
-            color: #103157;
-            letter-spacing: 5px;
-            background: rgba(226, 239, 255, 0.3);
-            padding: 6px 36px;
-            border-radius: 170px;
-            backdrop-filter: blur(2px);
-            border: 1px solid #cbdaf3;
-            display: inline-block;
-        }
-
-        .signature-sub {
-            font-size: 13px;
-            color: #577299;
-            letter-spacing: 1.6px;
-            margin-top: 6px;
-            font-weight: 330;
-        }
-
-        .extra-note {
-            margin: 18px 0 6px;
-            font-size: 14px;
-            color: #436188;
-            background: rgba(213, 228, 249, 0.25);
-            padding: 8px 22px;
-            border-radius: 112px;
-            display: inline-block;
-            border: 1px dashed #bed1ec;
-        }
-
-        .footer-company {
-            margin-top: 24px;
-            font-size: 12.5px;
-            color: #6882aa;
+        .btn-primary {
+            background: #1d3b69;
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 220px;
+            font-size: 17px;
+            font-weight: 510;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.05s;
+            box-shadow: 0 6px 14px rgba(28, 60, 118, 0.08);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
             letter-spacing: 0.3px;
-            opacity: 0.65;
+        }
+        .btn-primary:hover {
+            background: #143156;
+            box-shadow: 0 8px 18px rgba(28, 60, 118, 0.12);
+        }
+        .btn-primary:active {
+            transform: scale(0.97);
         }
 
-        @media (max-width: 520px) {
-            .card {
-                padding: 32px 18px 28px;
-                border-radius: 54px;
+        .btn-secondary {
+            background: transparent;
+            color: #335882;
+            border: 1px solid #cfdef3;
+            padding: 12px 24px;
+            border-radius: 220px;
+            font-size: 15px;
+            font-weight: 440;
+            cursor: default;
+            transition: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #f9fcff;
+        }
+
+        /* 法律提醒卡片 —— 醒目的警示块 */
+        .legal-warning {
+            background: #fcf7f4;
+            border-left: 5px solid #ac3e3e;
+            border-radius: 28px;
+            padding: 20px 24px;
+            margin: 16px 0 12px;
+            box-shadow: inset 0 0 0 1px rgba(198, 91, 77, 0.12);
+        }
+
+        .legal-warning-title {
+            font-weight: 610;
+            font-size: 16px;
+            color: #852828;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legal-warning-content {
+            font-size: 14.5px;
+            line-height: 1.65;
+            color: #382b2b;
+        }
+
+        .legal-warning-content strong {
+            color: #991f1f;
+        }
+
+        .legal-law-list {
+            margin-top: 8px;
+            padding-left: 6px;
+            list-style: none;
+            font-weight: 430;
+            color: #702626;
+        }
+        .legal-law-list li {
+            margin-bottom: 2px;
+        }
+
+        /* 博客底部 */
+        .blog-footer {
+            margin-top: 28px;
+            padding-top: 16px;
+            border-top: 1px solid #e5ecf5;
+            font-size: 13px;
+            color: #7087a8;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .footer-signature {
+            font-weight: 400;
+            letter-spacing: 0.6px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 540px) {
+            .blog-card {
+                padding: 28px 20px 26px;
+                border-radius: 32px;
             }
-            h1 {
-                font-size: 24px;
+            .blog-title {
+                font-size: 22px;
             }
-            .recovery-date-large {
-                font-size: 34px;
-                padding: 2px 18px;
-            }
-            .countdown-number {
-                font-size: 26px;
-                min-width: 48px;
-                padding: 0 10px;
-            }
-            .countdown-label {
-                font-size: 16px;
-            }
-            .signature {
+            .post-title {
                 font-size: 20px;
-                padding: 4px 24px;
-                letter-spacing: 3px;
             }
-            .glow-icon figure {
-                width: 84px;
-                height: 84px;
+            .btn-primary {
+                padding: 12px 24px;
+                font-size: 15px;
             }
-            .glow-icon svg {
-                width: 50px;
-                height: 50px;
+            .legal-warning {
+                padding: 16px 18px;
             }
         }
 
-        /* 彻底隐藏任何留言/评论相关元素 */
+        /* 确保没有任何留言/评论区域 */
         [class*="comment"], [id*="comment"], [class*="reply"], [id*="reply"],
         [class*="message"], [id*="message"], textarea, input[type="text"],
-        .comment-form, #respond, .comments-area, .commentlist, .pingback,
-        .trackback, .leave-reply, .comment-reply-link, #cancel-comment-reply-link {
+        .comment-form, #respond, .comments-area, .commentlist {
             display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-            width: 0 !important;
-            overflow: hidden !important;
-            position: absolute !important;
-            top: -9999px !important;
-            left: -9999px !important;
-            pointer-events: none !important;
-            opacity: 0 !important;
-        }
-        body::after, body::before, .card::after, .card::before {
-            content: none !important;
         }
     </style>
 </head>
 <body>
 
-<div class="card" role="main" aria-labelledby="pause-heading">
-    <!-- 潮汐月亮图标 -->
-    <div class="glow-icon">
-        <figure>
-            <svg viewBox="0 0 76 76" xmlns="http://www.w3.org/2000/svg">
-                <path d="M38 18 C48 18 56 26 56 38 C56 50 48 58 38 58 C33 58 28 56 24 52 C31 54 40 50 40 42 C40 34 34 28 26 28 C24 28 22 28.5 20 29 C22 22 29 18 38 18Z" stroke="currentColor" stroke-width="1.8" fill="rgba(71,114,193,0.07)"/>
-                <path d="M28 42 L32 46 L44 34" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M58 14 L63 9 M60 16 L66 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.5"/>
-                <path d="M12 60 L7 66 M14 63 L9 69" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.5"/>
-                <circle cx="51" cy="20" r="2.5" fill="#2f57a3" opacity="0.15"/>
-                <circle cx="20" cy="48" r="2" fill="#2f57a3" opacity="0.1"/>
-            </svg>
-        </figure>
-    </div>
-
-    <h1 id="pause-heading">潮汐搁浅 · 服务休憩</h1>
-    <div class="sub-message">深度维护 · 直至新月</div>
-
-    <!-- 预计恢复时间：1月20日 + 剩余 X日 X时 (动态计算) -->
-    <div class="recovery-block">
-        <div class="recovery-label">⏳ 预计恢复时间</div>
-        <div class="recovery-date-large">1 月 20 日</div>
-
-        <!-- 倒计时显示：XX日 XX时 (基于当前时间至1月20日) -->
-        <div class="countdown-flex" id="countdownContainer">
-            <div class="countdown-item">
-                <span class="countdown-number" id="daysDisplay">--</span>
-                <span class="countdown-label">日</span>
-            </div>
-            <span class="separator-dot">·</span>
-            <div class="countdown-item">
-                <span class="countdown-number" id="hoursDisplay">--</span>
-                <span class="countdown-label">时</span>
-            </div>
+<div class="blog-card" role="main">
+    <!-- 博客头部：头像 + 博客名 + 状态 -->
+    <div class="blog-header">
+        <div class="avatar">🌊</div>
+        <div class="blog-title-group">
+            <div class="blog-title">半盏潮汐</div>
+            <div class="blog-sub">Every-day-Share · 潮间带笔记</div>
         </div>
-        <div style="font-size: 13px; color: #557099; margin-top: 10px; letter-spacing: 0.5px;">🌊 潮汐时刻 · 耐心等候</div>
+        <div class="status-badge">学业暂泊 · 维护暂停</div>
     </div>
 
-    <!-- 署名：半盏潮汐 (无留言) -->
-    <div class="signature-area">
-        <div class="signature">半盏潮汐</div>
-        <div class="signature-sub">· 静 默 如 海 ·</div>
+    <!-- 博客文章主体 -->
+    <div class="blog-post">
+        <h2 class="post-title">📌 因学业暂缓维护，共享仍继续</h2>
+        <div class="post-meta">
+            <span>📅 2026-09-05</span>
+            <span>✍️ 作者 · 半盏潮汐</span>
+            <span>🏷️ #暂停维护 #共享资源</span>
+        </div>
+
+        <div class="post-content">
+            <p>各位朋友、读者：</p>
+            <p>由于近期学业负担加重，我不得不暂时停止对本博客及 Every-day-Share 仓库的日常维护与更新。但 <strong>资源共享的大门始终敞开</strong> —— 你依然可以浏览、下载已有的所有资源，也欢迎通过下方按钮进入共享页面。</p>
+            <p>选择 <strong>「前往共享页面」</strong>（即第一个按钮）即可跳转至 GitHub Issues 区，那里保留了全部可共享的资源索引与讨论。</p>
+            <p>感谢每一位访客的理解与陪伴。待学业告一段落，潮汐终会归来。🌙</p>
+        </div>
     </div>
 
-    <div class="extra-note">
-        ✦ 维护期间留言板与评论通道暂停 ✦
+    <!-- 两个按钮：第一个是主要跳转，第二个是占位/说明 -->
+    <div class="action-row">
+        <a href="https://github.com/XZZ-A11Y/Every-day-Share/issues" target="_blank" rel="noopener noreferrer" class="btn-primary">
+            📂 前往共享页面
+        </a>
+        <span class="btn-secondary">
+            🔒 维护暂停 · 资源可读
+        </span>
     </div>
 
-    <div class="footer-company">
-        半盏潮汐 · 潮间带工作室
+    <!-- 法律提醒：禁止发布违法内容，引用具体法律名称 -->
+    <div class="legal-warning">
+        <div class="legal-warning-title">
+            ⚖️ 法律警示 · 严禁违法行为
+        </div>
+        <div class="legal-warning-content">
+            <p><strong>禁止在本共享页面及任何关联平台发布、传播下列内容：</strong></p>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+                <li>计算机病毒源码、计算机病毒下载链接、计算机病毒本身；</li>
+                <li>伪冒应用程式下载站（意图误导他人下载病毒、实施敲诈勒索）；</li>
+                <li>网暴、公开他人隐私等侵犯公民权益的内容；</li>
+                <li>任何其他违反中国法律法规的信息。</li>
+            </ul>
+            <p style="font-weight: 450;">上述行为均违反以下法律，一经发现将<strong>依法追究法律责任</strong>：</p>
+            <ul class="legal-law-list">
+                <li>《中华人民共和国网络安全法》</li>
+                <li>《中华人民共和国数据安全法》</li>
+                <li>《中华人民共和国个人信息保护法》</li>
+                <li>《中华人民共和国计算机信息系统安全保护条例》</li>
+            </ul>
+            <p style="margin-top: 8px; font-size: 13.5px; color: #633434;">请共同维护清朗的网络空间。感谢配合。</p>
+        </div>
+    </div>
+
+    <!-- 博客底部 -->
+    <div class="blog-footer">
+        <span class="footer-signature">半盏潮汐 · 潮间带工作室</span>
+        <span>📮 2026年秋学期学期结束后恢复更新</span>
     </div>
 </div>
-
-<script>
-    (function() {
-        // 目标日期：2027年1月20日 00:00 (可根据需要调整具体时刻，这里设为当天零点)
-        // 注意：年份使用当前年份+1，若当前日期已过1月20日则自动切换到下一年
-        const now = new Date();
-        let targetYear = now.getFullYear();
-        // 如果今年1月20日已经过去，则设置为明年
-        const jan20ThisYear = new Date(targetYear, 0, 20, 0, 0, 0); // 月份0表示一月
-        if (now > jan20ThisYear) {
-            targetYear += 1;
-        }
-        const targetDate = new Date(targetYear, 0, 20, 0, 0, 0); // 1月20日 00:00
-
-        const daysEl = document.getElementById('daysDisplay');
-        const hoursEl = document.getElementById('hoursDisplay');
-
-        function updateCountdown() {
-            const current = new Date();
-            let diff = targetDate - current;
-
-            if (diff <= 0) {
-                // 如果已过1月20日，显示 0日0时 (或者可以再切到下一年，但这里保持0)
-                daysEl.textContent = '0';
-                hoursEl.textContent = '0';
-                return;
-            }
-
-            const totalHours = Math.floor(diff / (1000 * 60 * 60));
-            const days = Math.floor(totalHours / 24);
-            const hours = totalHours % 24;
-
-            daysEl.textContent = String(days);
-            hoursEl.textContent = String(hours).padStart(2, '0');
-        }
-
-        updateCountdown();
-        setInterval(updateCountdown, 1000 * 60); // 每分钟更新一次 (无需每秒刷新)
-        // 首次立即更新，之后每分钟同步
-    })();
-</script>
 
 </body>
 </html>
