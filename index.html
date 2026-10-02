@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>半盏潮汐 · 云端硬盘</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+<style>
+:root{
+  --blue:#1a73e8; --blue-d:#1557b0; --blue-l:#e8f0fe;
+  --bg:#fff; --bg2:#f8f9fa; --hover:#f1f3f4; --sel:#e8f0fe;
+  --text:#202124; --dim:#5f6368; --line:#dadce0;
+  --sh:0 1px 2px 0 rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15);
+  --sh2:0 2px 6px 2px rgba(60,64,67,.15),0 1px 2px 0 rgba(60,64,67,.3);
+}
+body.dark{
+  --blue:#8ab4f8; --blue-d:#a8c7fa; --blue-l:#1e3a5f;
+  --bg:#202124; --bg2:#292a2d; --hover:#3c4043; --sel:#41331c;
+  --text:#e8eaed; --dim:#9aa0a6; --line:#3c4043;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font:400 14px/1.5 Roboto,Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+  display:flex; flex-direction:column; overflow:hidden;
+}
+button{font:inherit; color:inherit; cursor:pointer; border:0; background:none}
+input{font:inherit; color:inherit}
+
+/* ===== 顶栏 ===== */
+header{
+  flex:none; height:64px; display:flex; align-items:center; gap:8px;
+  padding:0 16px; border-bottom:1px solid var(--line); background:var(--bg);
+}
+.brand{display:flex; align-items:center; gap:10px; min-width:220px}
+.logo{
+  width:40px; height:40px; border-radius:8px; display:grid; place-items:center;
+  font-size:22px; background:linear-gradient(135deg,#4285f4,#34a853 35%,#fbbc04 70%,#ea4335);
+}
+.brand b{font-size:20px; font-weight:500; letter-spacing:.2px}
+.search{
+  flex:1; max-width:720px; height:48px; display:flex; align-items:center; gap:12px;
+  background:var(--bg2); border-radius:8px; padding:0 16px; transition:.15s;
+}
+body.dark .search{background:#303134}
+.search:focus-within{background:var(--bg); box-shadow:var(--sh); }
+body.dark .search:focus-within{background:#303134}
+.search svg{flex:none; opacity:.6}
+.search input{flex:1; min-width:0; width:100%; border:0; outline:0; background:none; font-size:15px}
+.search input::placeholder{color:var(--dim)}
+.iconbtn{
+  width:40px; height:40px; border-radius:50%; display:grid; place-items:center;
+  font-size:18px; transition:.15s;
+}
+.iconbtn:hover{background:var(--hover)}
+.avatar{
+  width:32px; height:32px; border-radius:50%; background:var(--blue); color:#fff;
+  display:grid; place-items:center; font-size:14px; font-weight:500; margin-left:4px;
+}
+
+/* ===== 主体 ===== */
+.body{flex:1; display:flex; min-height:0}
+aside{
+  flex:none; width:240px; padding:12px 8px; overflow-y:auto; border-right:1px solid var(--line);
+}
+.newbtn{
+  display:flex; align-items:center; gap:12px; height:48px; padding:0 24px 0 18px;
+  background:var(--bg); border-radius:24px; box-shadow:var(--sh); font-weight:500;
+  margin-bottom:14px; transition:.15s;
+}
+.newbtn:hover{box-shadow:var(--sh2); background:var(--bg2)}
+.newbtn span{font-size:20px; color:var(--blue)}
+.nav{list-style:none; margin:0; padding:0}
+.nav li{
+  display:flex; align-items:center; gap:14px; height:34px; padding:0 16px;
+  border-radius:0 17px 17px 0; cursor:pointer; font-size:14px; color:var(--dim);
+}
+.nav li:hover{background:var(--hover)}
+.nav li.on{background:var(--blue-l); color:var(--blue-d); font-weight:500}
+body.dark .nav li.on{color:var(--blue)}
+.nav li .em{width:20px; text-align:center; font-size:15px}
+.nav li .ct{margin-left:auto; font-size:12px; opacity:.75}
+.nav .hd{padding:16px 16px 6px; font-size:12px; font-weight:500; letter-spacing:.6px;
+  text-transform:uppercase; color:var(--dim); cursor:default}
+.nav .hd:hover{background:none}
+
+main{flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden}
+.toolbar{
+  flex:none; height:56px; display:flex; align-items:center; gap:10px;
+  padding:0 24px; border-bottom:1px solid var(--line);
+}
+.crumb{font-size:16px; font-weight:500; margin-right:auto; display:flex; align-items:center; gap:8px}
+.crumb small{font-weight:400; color:var(--dim); font-size:12px}
+.sel{
+  height:36px; padding:0 12px; border-radius:18px; border:1px solid var(--line);
+  background:var(--bg); font-size:13px; outline:0;
+}
+.viewbtn{display:flex; border:1px solid var(--line); border-radius:18px; overflow:hidden}
+.viewbtn button{width:38px; height:36px; font-size:16px; color:var(--dim)}
+.viewbtn button.on{background:var(--blue-l); color:var(--blue-d)}
+body.dark .viewbtn button.on{color:var(--blue)}
+
+.scroll{flex:1; overflow-y:auto; padding:0 0 60px}
+
+/* ===== 列表视图（Drive 风格） ===== */
+table{width:100%; border-collapse:collapse}
+thead th{
+  position:sticky; top:0; z-index:2; background:var(--bg); text-align:left;
+  font-size:12px; font-weight:500; color:var(--dim); padding:10px 16px;
+  border-bottom:1px solid var(--line); white-space:nowrap;
+}
+thead th.s{cursor:pointer; user-select:none}
+thead th.s:hover{color:var(--text)}
+tbody td{padding:0 16px; height:48px; border-bottom:1px solid var(--line); font-size:14px}
+tbody tr:hover td{background:var(--hover)}
+tbody tr{cursor:default}
+.name{display:flex; align-items:center; gap:12px; min-width:0}
+.name .fi{width:22px; text-align:center; font-size:19px; flex:none}
+.name .tx{
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:400;
+}
+.name .badge{
+  flex:none; font-size:11px; padding:1px 7px; border-radius:4px;
+  background:var(--blue-l); color:var(--blue-d); font-weight:500;
+}
+body.dark .name .badge{color:var(--blue)}
+td.m{color:var(--dim); font-size:13px; white-space:nowrap; width:130px}
+td.d{color:var(--dim); font-size:13px; white-space:nowrap; width:150px}
+td.op{width:150px; text-align:right; white-space:nowrap}
+td.op .row{display:flex; gap:2px; justify-content:flex-end; opacity:0; transition:.15s}
+tbody tr:hover td.op .row{opacity:1}
+@media (hover:none){ td.op .row{opacity:1} }
+.opb{width:32px; height:32px; border-radius:50%; display:grid; place-items:center; font-size:15px}
+.opb:hover{background:var(--hover)}
+.dl{color:var(--blue)}
+
+.grp{
+  display:flex; align-items:center; gap:10px; padding:16px 16px 8px;
+  font-size:12px; font-weight:500; color:var(--dim); letter-spacing:.4px;
+}
+.grp i{flex:1; height:1px; background:var(--line)}
+tr.grp td{
+  height:44px; padding-top:14px; font-size:12px; font-weight:500; color:var(--dim);
+  border-bottom:1px solid var(--line); background:var(--bg);
+}
+tbody tr.grp:hover td{background:var(--bg)}
+tr.sub td{background:var(--bg2)}
+body.dark tr.sub td{background:#292a2d}
+
+/* ===== 网格视图 ===== */
+.grid{
+  display:grid; gap:12px; padding:16px;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+}
+.gcard{
+  border:1px solid var(--line); border-radius:10px; padding:12px; display:flex;
+  flex-direction:column; gap:8px; transition:.15s; cursor:default;
+}
+.gcard:hover{background:var(--hover); box-shadow:var(--sh)}
+.gcard .th{
+  height:88px; border-radius:8px; background:var(--bg2); display:grid; place-items:center;
+  font-size:40px;
+}
+body.dark .gcard .th{background:#303134}
+.gcard .gn{font-size:13px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.gcard .gm{font-size:12px; color:var(--dim)}
+.gcard .ga{display:flex; gap:2px; margin-top:2px}
+.gcard .ga .opb{width:28px; height:28px; font-size:13px}
+
+.empty{text-align:center; padding:80px 20px; color:var(--dim)}
+.empty div{font-size:44px; margin-bottom:12px}
+
+/* ===== 弹窗 ===== */
+.mask{
+  position:fixed; inset:0; background:rgba(32,33,36,.6); display:grid; place-items:center;
+  z-index:100; padding:18px;
+}
+.mask[hidden]{display:none}
+.dlg{
+  width:min(660px,100%); background:var(--bg); border-radius:12px; box-shadow:var(--sh2);
+  padding:22px; max-height:92vh; overflow:auto;
+}
+.dlg h3{margin:0 0 4px; font-size:17px; font-weight:500}
+.dlg .sub{font-size:13px; color:var(--dim); margin-bottom:14px}
+.qrwrap{display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start}
+.qrbox{
+  width:200px; height:200px; flex:none; background:#fff; border-radius:10px; padding:8px;
+  display:grid; place-items:center; border:1px solid var(--line);
+}
+.qrbox img,.qrbox canvas{width:100%!important; height:100%!important}
+.qrside{flex:1 1 240px; display:flex; flex-direction:column; gap:10px}
+.qrside b{font-size:14px; font-weight:500; word-break:break-all}
+.qrside .mm{font-size:12px; color:var(--dim)}
+.inp{
+  width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:6px;
+  background:var(--bg); font-size:12px; word-break:break-all; outline:0;
+}
+.inp:focus{border-color:var(--blue)}
+.btnrow{display:flex; gap:8px; flex-wrap:wrap; margin-top:6px}
+.pill{
+  height:36px; padding:0 20px; border-radius:18px; background:var(--blue); color:#fff;
+  font-weight:500; font-size:14px;
+}
+.pill:hover{background:var(--blue-d)}
+.pill.gh{background:none; color:var(--blue); border:1px solid var(--line)}
+body.dark .pill.gh{color:var(--blue)}
+.pill:disabled{opacity:.5; cursor:default}
+.plink{display:flex; flex-direction:column; gap:5px; max-height:150px; overflow:auto; font-size:12px}
+.plink a{color:var(--blue); text-decoration:none; word-break:break-all}
+.fld{display:flex; flex-direction:column; gap:6px; font-size:13px}
+.fld span{color:var(--dim); font-size:12px}
+
+.toast{
+  position:fixed; left:50%; bottom:28px; transform:translateX(-50%); z-index:200;
+  background:#323232; color:#fff; padding:12px 20px; border-radius:6px; font-size:13px;
+  box-shadow:var(--sh2);
+}
+body.dark .toast{background:#e8eaed; color:#202124}
+.toast[hidden]{display:none}
+
+#catSel{display:none}
+@media (max-width:900px){
+  aside{display:none}
+  #catSel{display:block; max-width:130px}
+  header{padding:0 8px; gap:4px}
+  .brand{min-width:auto}
+  .brand b{display:none}
+  .search{max-width:none; height:40px; padding:0 12px}
+  #viewHelp,#av{display:none}
+  .toolbar{padding:0 12px}
+  .crumb{font-size:15px}
+  td.d,th.d{display:none}
+  table{table-layout:fixed; width:100%}
+  td.m,th.m{width:88px}
+  td.op,th.op{width:112px}
+  td.op .row{opacity:1}
+  tbody td{padding:0 10px}
+  .newbtn{display:none}
+}
+@media (max-width:520px){
+  #sort{display:none}
+  td.m,th.m{width:74px}
+  td.op,th.op{width:104px}
+  tbody td{padding:0 8px}
+  .opb{width:30px; height:30px; font-size:14px}
+  .name{gap:8px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">🌊</div>
+    <b>云端硬盘</b>
+  </div>
+  <div class="search">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>
+    <input id="kw" type="search" placeholder="在云端硬盘中搜索" autocomplete="off">
+  </div>
+  <button class="iconbtn" id="viewHelp" title="视图">▦</button>
+  <button class="iconbtn" id="themeBtn" title="深色模式">🌓</button>
+  <button class="iconbtn" id="setBtn" title="设置">⚙</button>
+  <div class="avatar" id="av">半</div>
+</header>
+
+<div class="body">
+  <aside>
+    <button class="newbtn" id="newBtn"><span>＋</span>上传文件</button>
+    <ul class="nav" id="nav"></ul>
+  </aside>
+
+  <main>
+    <div class="toolbar">
+      <div class="crumb" id="crumb">我的云端硬盘 <small id="crumbSub"></small></div>
+      <select class="sel" id="catSel" title="分类"></select>
+      <select class="sel" id="sort">
+        <option value="time">最近修改</option>
+        <option value="name">名称 A→Z</option>
+        <option value="size">体积 大→小</option>
+        <option value="hot">下载最多</option>
+      </select>
+      <div class="viewbtn">
+        <button id="vList" class="on" title="列表视图">☰</button>
+        <button id="vGrid" title="网格视图">▦</button>
+      </div>
+    </div>
+    <div class="scroll" id="scroll"></div>
+  </main>
+</div>
+
+<!-- 二维码 -->
+<div class="mask" id="qrM" hidden>
+  <div class="dlg">
+    <h3>扫码下载</h3>
+    <div class="sub" id="qrS"></div>
+    <div class="qrwrap">
+      <div class="qrbox" id="qrBox"><span style="color:#888">生成中…</span></div>
+      <div class="qrside">
+        <b id="qrN"></b>
+        <div class="mm" id="qrMeta"></div>
+        <input class="inp" id="qrL" readonly>
+        <div class="btnrow">
+          <button class="pill" id="qrC">复制链接</button>
+          <button class="pill gh" id="qrD" disabled>保存二维码</button>
+        </div>
+        <div class="plink" id="qrP"></div>
+      </div>
+    </div>
+    <div class="btnrow" style="justify-content:flex-end; margin-top:16px">
+      <button class="pill gh" id="qrX">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 设置 -->
+<div class="mask" id="setM" hidden>
+  <div class="dlg" style="width:min(480px,100%)">
+    <h3>设置</h3>
+    <div class="sub">仓库信息只保存在本机浏览器，不会上传</div>
+    <div style="display:flex; flex-direction:column; gap:14px">
+      <label class="fld">
+        <span>仓库（用户名 / 仓库名）</span>
+        <input class="inp" id="repoI" placeholder="例如 octocat/Hello-World">
+      </label>
+      <label class="fld">
+        <span>Token（可选）：公开仓库可留空。填 Personal Access Token 把接口限额从 60 次/小时提升到 5000 次/小时</span>
+        <input class="inp" id="tokI" type="password" placeholder="ghp_xxx（可留空）">
+      </label>
+      <div class="btnrow">
+        <button class="pill" id="setS">保存并刷新</button>
+        <button class="pill gh" id="setR">重新加载</button>
+      </div>
+    </div>
+    <div class="btnrow" style="justify-content:flex-end; margin-top:16px">
+      <button class="pill gh" id="setX">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ============ 可自定义配置 ============ */
+const CONFIG = {
+  repo: '',            // 留空则从网址自动推断；也可直接写 '用户名/仓库名'
+  title: '云端硬盘',
+  categories: [        // 按顺序匹配文件名，命中即用该分类
+    { n:'电子书',   i:'📚', m:/(\.epub$|\.mobi$|\.azw3$|电子书|ebook)/i },
+    { n:'文档资料', i:'📄', m:/(\.pdf$|\.docx?$|\.pptx?$|\.xlsx?$|\.md$|文档|资料|手册)/i },
+    { n:'设计素材', i:'🎨', m:/(\.psd$|\.ai$|\.sketch$|\.fig$|素材|设计)/i },
+    { n:'图片图集', i:'🖼️', m:/(\.png$|\.jpe?g$|\.webp$|\.svg$|图集|壁纸)/i },
+    { n:'视频课程', i:'🎬', m:/(\.mp4$|\.mkv$|\.mov$|\.avi$|视频|课程|录播)/i },
+    { n:'音频音乐', i:'🎧', m:/(\.mp3$|\.flac$|\.wav$|\.m4a$|音频|音乐|播客)/i },
+    { n:'安装包',   i:'💿', m:/(\.exe$|\.msi$|\.dmg$|\.pkg$|\.apk$|setup|安装包)/i },
+    { n:'压缩包',   i:'🗜️', m:/(\.zip$|\.rar$|7z$|\.tar\.gz$)/i },
+    { n:'数据集',   i:'🧬', m:/(\.csv$|\.parquet$|\.jsonl$|dataset|数据集)/i }
+  ],
+  fallback: '其他资源'
+};
+/* ============ 配置结束 ============ */
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let items = [], cat = '__all__', kw = '', view = 'list';
+
+/* ---------- 仓库 ---------- */
+function guessRepo(){
+  if (CONFIG.repo) return CONFIG.repo;
+  const p = location.pathname.split('/').filter(Boolean);
+  if (location.hostname.endsWith('.github.io') && p.length)
+    return location.hostname.replace('.github.io','') + '/' + p[0];
+  return '';
+}
+let REPO = localStorage.getItem('vault_repo') || guessRepo();
+let TOKEN = localStorage.getItem('vault_token') || '';
+
+/* ---------- 工具 ---------- */
+function size(n){
+  const u = ['B','KB','MB','GB','TB']; let i = 0; n = +n || 0;
+  while (n >= 1024 && i < 4){ n /= 1024; i++; }
+  return (i ? n.toFixed(2) : n.toFixed(0)) + ' ' + u[i];
+}
+function fmtDate(s){
+  if (!s) return '—';
+  const d = new Date(s);
+  if (isNaN(d)) return '—';
+  return d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日';
+}
+function icon(name){
+  const e = (name.split('.').pop() || '').toLowerCase();
+  const m = {pdf:'📕',doc:'📘',docx:'📘',xls:'📗',xlsx:'📗',ppt:'📙',pptx:'📙',txt:'📝',md:'📝',
+    epub:'📚',mobi:'📚',azw3:'📚',
+    png:'🖼️',jpg:'🖼️',jpeg:'🖼️',webp:'🖼️',gif:'🖼️',svg:'🖼️',psd:'🎨',ai:'🎨',sketch:'🎨',fig:'🎨',
+    mp4:'🎬',mkv:'🎬',mov:'🎬',avi:'🎬',mp3:'🎵',flac:'🎵',wav:'🎵',m4a:'🎵',
+    zip:'🗜️',rar:'🗜️',gz:'🗜️',exe:'💿',msi:'💿',dmg:'💿',apk:'📱',
+    csv:'📊',xlsx2:'📊',json:'📊',parquet:'📊'};
+  return m[e] || '📦';
+}
+const EXTMAP = {epub:'电子书',mobi:'电子书',azw3:'电子书',pdf:'文档资料',doc:'文档资料',docx:'文档资料',
+  xls:'文档资料',xlsx:'文档资料',ppt:'文档资料',pptx:'文档资料',md:'文档资料',txt:'文档资料',
+  psd:'设计素材',ai:'设计素材',sketch:'设计素材',fig:'设计素材',
+  png:'图片图集',jpg:'图片图集',jpeg:'图片图集',webp:'图片图集',svg:'图片图集',
+  mp4:'视频课程',mkv:'视频课程',mov:'视频课程',avi:'视频课程',
+  mp3:'音频音乐',flac:'音频音乐',wav:'音频音乐',m4a:'音频音乐',
+  exe:'安装包',msi:'安装包',dmg:'安装包',apk:'安装包',
+  zip:'压缩包',rar:'压缩包',csv:'数据集',parquet:'数据集'};
+
+function classify(name, meta){
+  if (meta && meta.category) return meta.category;
+  for (const c of CONFIG.categories) if (c.m.test(name)) return c.n;
+  const e = (name.split('.').pop() || '').toLowerCase();
+  return EXTMAP[e] || CONFIG.fallback;
+}
+function parseMeta(body){
+  const o = {};
+  if (!body) return o;
+  const m = body.match(/^\s*---\s*\n([\s\S]*?)\n\s*---\s*\n?/);
+  if (m) m[1].split('\n').forEach(l => {
+    const k = l.indexOf(':');
+    if (k > 0) o[l.slice(0,k).trim().toLowerCase()] = l.slice(k+1).trim();
+  });
+  o._desc = m ? body.slice(m[0].length).trim().slice(0,200) : body.slice(0,200);
+  return o;
+}
+/* 分卷合并：xxx.part000 / xxx.z01 / xxx.7z.002 */
+const PART = [/^(.+?)\.part(\d{1,3})$/i, /^(.+?)\.z(\d{2,3})$/i, /^(.+?)\.7z\.(\d{2,3})$/i];
+function mergeParts(list){
+  const g = {}, rest = [];
+  list.forEach(it => {
+    for (const re of PART){
+      const m = it.name.match(re);
+      if (m){ (g[m[1]] = g[m[1]] || []).push([+m[2], it]); return; }
+    }
+    rest.push(it);
+  });
+  const out = rest.slice();
+  for (const base in g){
+    const ps = g[base].sort((a,b) => a[0]-b[0]).map(x => x[1]);
+    const o = Object.assign({}, ps[0]);
+    o.name = base;
+    o.size = ps.reduce((s,x) => s + x.size, 0);
+    o.size_h = size(o.size);
+    o.dl = Math.max.apply(null, ps.map(x => x.dl));
+    o.multi = ps.map(p => ({name:p.name, url:p.url, sz:p.size_h}));
+    out.push(o);
+  }
+  return out;
+}
+
+/* ---------- 读取 ---------- */
+async function gh(path){
+  const h = { Accept:'application/vnd.github+json' };
+  if (TOKEN) h.Authorization = 'Bearer ' + TOKEN;
+  const r = await fetch('https://api.github.com' + path, { headers:h });
+  if (!r.ok) throw new Error('GitHub API ' + r.status +
+    '（403 多为访问频率超限，可在设置里填 Token）');
+  return r.json();
+}
+async function load(){
+  if (!REPO){
+    REPO = prompt('请输入仓库（用户名/仓库名）：') || '';
+    if (REPO) localStorage.setItem('vault_repo', REPO);
+  }
+  if (!REPO){
+    $('#scroll').innerHTML = '<div class="empty"><div>📂</div>未设置仓库<br>点右上角 ⚙ 填写</div>';
+    return;
+  }
+  $('#scroll').innerHTML = '<div class="empty"><div>⏳</div>正在读取 ' + esc(REPO) + ' …</div>';
+  try{
+    let rels = [], page = 1;
+    while (page <= 10){
+      const d = await gh('/repos/' + REPO + '/releases?per_page=100&page=' + page);
+      rels = rels.concat(d);
+      if (d.length < 100) break;
+      page++;
+    }
+    const tmp = [];
+    rels.forEach(r => {
+      if (r.draft) return;
+      const meta = parseMeta(r.body || '');
+      (r.assets || []).forEach(a => {
+        if (a.state !== 'uploaded') return;
+        tmp.push({ name:a.name, cat:classify(a.name, meta), size:a.size, size_h:size(a.size),
+          url:a.browser_download_url, dl:a.download_count || 0,
+          up:a.updated_at || a.created_at || '', tag:r.tag_name || '',
+          rel:r.name || r.tag_name || '', rel_u:r.html_url || '',
+          desc:(meta.desc || meta._desc || '') });
+      });
+    });
+    items = mergeParts(tmp);
+    $('#av').textContent = (REPO.split('/')[0] || '半').slice(0,2);
+    render();
+  }catch(e){
+    $('#scroll').innerHTML = '<div class="empty"><div>⚠️</div>读取失败：' + esc(e.message) +
+      '<br><br>点右上角 ⚙ 检查仓库名或填写 Token</div>';
+  }
+}
+
+/* ---------- 渲染 ---------- */
+function shown(){
+  let a = items;
+  if (cat !== '__all__') a = a.filter(i => i.cat === cat);
+  if (kw){
+    const k = kw.toLowerCase();
+    a = a.filter(i => (i.name + ' ' + i.desc + ' ' + i.tag + ' ' + i.rel).toLowerCase().indexOf(k) >= 0);
+  }
+  const s = $('#sort').value;
+  const cmp = { time:(x,y) => String(y.up).localeCompare(String(x.up)),
+    name:(x,y) => x.name.localeCompare(y.name, 'zh'),
+    size:(x,y) => y.size - x.size, hot:(x,y) => y.dl - x.dl };
+  return a.slice().sort(cmp[s]);
+}
+function catIcon(k){
+  const c = CONFIG.categories.find(x => x.n === k);
+  return c ? c.i : '📦';
+}
+function renderNav(){
+  const g = {};
+  items.forEach(i => g[i.cat] = (g[i.cat] || 0) + 1);
+  let h = '<li class="hd">存储空间</li>'
+    + '<li data-c="__all__" class="' + (cat==='__all__'?'on':'') + '">'
+    + '<span class="em">🗂️</span>我的云端硬盘<span class="ct">' + items.length + '</span></li>';
+  h += '<li class="hd">分类</li>';
+  Object.keys(g).forEach(k => {
+    h += '<li data-c="' + esc(k) + '" class="' + (cat===k?'on':'') + '">'
+      + '<span class="em">' + catIcon(k) + '</span>' + esc(k)
+      + '<span class="ct">' + g[k] + '</span></li>';
+  });
+  $('#nav').innerHTML = h;
+  $('#nav').querySelectorAll('li[data-c]').forEach(li => {
+    li.onclick = () => { cat = li.dataset.c; render(); };
+  });
+  /* 窄屏没有侧栏，用下拉选分类 */
+  $('#catSel').innerHTML = '<option value="__all__">全部 ' + items.length + '</option>'
+    + Object.keys(g).map(k => '<option value="' + esc(k) + '"'
+      + (cat === k ? ' selected' : '') + '>' + catIcon(k) + ' ' + esc(k) + ' ' + g[k] + '</option>').join('');
+}
+function rowHtml(i){
+  return '<tr data-n="' + esc(i.name) + '">'
+    + '<td><div class="name"><span class="fi">' + icon(i.name) + '</span>'
+    + '<span class="tx" title="' + esc(i.name) + '">' + esc(i.name) + '</span>'
+    + (i.multi ? '<span class="badge">分卷 ' + i.multi.length + '</span>' : '')
+    + '</div></td>'
+    + '<td class="m">' + esc(i.size_h) + '</td>'
+    + '<td class="d">' + esc(fmtDate(i.up)) + '</td>'
+    + '<td class="op"><div class="row">'
+    + '<button class="opb" data-a="copy" title="复制链接">🔗</button>'
+    + '<button class="opb" data-a="qr" title="二维码">▣</button>'
+    + (i.multi ? '<button class="opb" data-a="parts" title="展开分卷">☰</button>' : '')
+    + '<a class="opb dl" href="' + esc(i.url) + '" target="_blank" rel="noopener" title="下载">⬇</a>'
+    + '</div></td></tr>'
+    + (i.multi ? '<tr class="sub" hidden><td colspan="4" style="padding:6px 16px 12px 50px">'
+      + i.multi.map(p => '<div style="font-size:12px;color:var(--dim);padding:2px 0">'
+        + '<a href="' + esc(p.url) + '" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">'
+        + esc(p.name) + '</a> · ' + esc(p.sz) + '</div>').join('') + '</td></tr>' : '');
+}
+function gridHtml(i){
+  return '<div class="gcard" data-n="' + esc(i.name) + '">'
+    + '<div class="th">' + icon(i.name) + '</div>'
+    + '<div class="gn" title="' + esc(i.name) + '">' + esc(i.name) + '</div>'
+    + '<div class="gm">' + esc(i.size_h) + ' · ' + esc(fmtDate(i.up))
+    + (i.multi ? ' · 分卷' + i.multi.length : '') + '</div>'
+    + '<div class="ga">'
+    + '<a class="opb dl" href="' + esc(i.url) + '" target="_blank" rel="noopener" title="下载">⬇</a>'
+    + '<button class="opb" data-a="copy" title="复制链接">🔗</button>'
+    + '<button class="opb" data-a="qr" title="二维码">▣</button>'
+    + (i.multi ? '<button class="opb" data-a="parts" title="分卷">☰</button>' : '')
+    + '</div></div>';
+}
+function render(){
+  const a = shown(), g = {};
+  a.forEach(i => (g[i.cat] = g[i.cat] || []).push(i));
+  renderNav();
+
+  const total = items.reduce((s,i) => s + i.size, 0);
+  $('#crumb').innerHTML = (cat === '__all__' ? '我的云端硬盘' : catIcon(cat) + ' ' + esc(cat))
+    + ' <small>' + a.length + ' 个项目 · ' + size(total) + '</small>';
+
+  if (!a.length){
+    $('#scroll').innerHTML = '<div class="empty"><div>🔍</div>没有匹配的文件</div>';
+    return;
+  }
+  if (view === 'grid'){
+    $('#scroll').innerHTML = Object.keys(g).map(k =>
+      '<div class="grp">' + catIcon(k) + ' ' + esc(k) + '<i></i>' + g[k].length + ' 个</div>'
+      + '<div class="grid">' + g[k].map(gridHtml).join('') + '</div>').join('');
+    return;
+  }
+  /* 列表视图：单一表格 + 分组标题行，保证列宽一致 */
+  const body = Object.keys(g).map(k =>
+    '<tr class="grp"><td colspan="4">' + catIcon(k) + ' ' + esc(k)
+    + ' <span style="opacity:.7">' + g[k].length + ' 个</span></td></tr>'
+    + g[k].map(rowHtml).join('')).join('');
+  $('#scroll').innerHTML = '<table>'
+    + '<thead><tr><th>名称</th><th class="m">大小</th><th class="d">修改时间</th>'
+    + '<th class="op" style="text-align:right">操作</th></tr></thead>'
+    + '<tbody>' + body + '</tbody></table>';
+}
+
+/* ---------- 交互 ---------- */
+let tt;
+function toast(m){
+  const t = $('#toast'); t.textContent = m; t.hidden = false;
+  clearTimeout(tt); tt = setTimeout(() => t.hidden = true, 2200);
+}
+function copy(text, it){
+  const ok = () => toast('链接已复制');
+  if (navigator.clipboard && isSecureContext) navigator.clipboard.writeText(text).then(ok).catch(fb);
+  else fb();
+  function fb(){
+    const t = document.createElement('textarea');
+    t.value = text; t.style.opacity = 0; document.body.append(t); t.select();
+    let done = false;
+    try { done = document.execCommand('copy'); } catch(e){ done = false; }
+    t.remove();
+    if (done){ ok(); return; }
+    toast('浏览器阻止了复制，已打开链接窗口');
+    if (it) openQr(it);   // 弹窗里有可手动选中的链接
+  }
+}
+let qrLib = null;
+function qrJs(){
+  if (qrLib) return qrLib;
+  const cdns = ['https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
+    'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js',
+    'https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js'];
+  return qrLib = new Promise(res => {
+    if (window.QRCode) return res(1);
+    let i = 0;
+    (function nx(){
+      if (i >= cdns.length) return res(0);
+      const s = document.createElement('script');
+      s.src = cdns[i++];
+      s.onload = () => res(!!window.QRCode);
+      s.onerror = nx;
+      document.head.append(s);
+    })();
+  });
+}
+async function openQr(it){
+  $('#qrM').hidden = false;
+  $('#qrS').textContent = '用手机扫描即可下载';
+  $('#qrN').textContent = it.name;
+  $('#qrMeta').textContent = it.size_h + ' · ' + fmtDate(it.up) + ' · ' + it.cat;
+  $('#qrL').value = it.url;
+  $('#qrD').disabled = true;
+  $('#qrP').innerHTML = it.multi
+    ? '<div style="color:var(--dim)">分卷直链：</div>' + it.multi.map(p =>
+        '<a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.name) + ' · ' + esc(p.sz) + '</a>').join('')
+    : '';
+  const box = $('#qrBox');
+  box.innerHTML = '<span style="color:#888">生成中…</span>';
+  if (await qrJs() && window.QRCode){
+    try{
+      box.innerHTML = '';
+      const d = document.createElement('div');
+      box.append(d);
+      new window.QRCode(d, { text:it.url, width:184, height:184, colorDark:'#202124', colorLight:'#ffffff' });
+      setTimeout(() => {
+        const c = d.querySelector('canvas') || d.querySelector('img');
+        if (c){ $('#qrD').disabled = false; $('#qrD').onclick = () => saveQr(c, it.name); }
+      }, 200);
+      return;
+    }catch(e){}
+  }
+  const im = new Image();
+  im.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=' + encodeURIComponent(it.url);
+  im.onload = () => { box.innerHTML = ''; box.append(im);
+    $('#qrD').disabled = false; $('#qrD').onclick = () => saveQr(im, it.name); };
+  im.onerror = () => { box.innerHTML = '<span style="color:#888;text-align:center">二维码加载失败<br>可直接复制链接</span>'; };
+}
+function saveQr(el, name){
+  try{
+    let u;
+    if (el.tagName === 'CANVAS') u = el.toDataURL('image/png');
+    else {
+      const c = document.createElement('canvas');
+      c.width = c.height = 200;
+      c.getContext('2d').drawImage(el, 0, 0, 200, 200);
+      u = c.toDataURL('image/png');
+    }
+    const a = document.createElement('a');
+    a.href = u;
+    a.download = name.replace(/[\\/:*?"<>|]/g, '_').slice(0, 60) + '.png';
+    a.click();
+    toast('二维码已保存');
+  }catch(e){ toast('保存失败，可截图'); }
+}
+
+/* 事件委托 */
+$('#scroll').addEventListener('click', e => {
+  const b = e.target.closest('[data-a]');
+  if (!b) return;
+  const name = b.closest('[data-n]').dataset.n;
+  const it = items.find(x => x.name === name);
+  if (!it) return;
+  const act = b.dataset.a;
+  if (act === 'copy') copy(it.url, it);
+  if (act === 'qr') openQr(it);
+  if (act === 'parts'){
+    const tr = b.closest('tr');
+    const sub = tr && tr.nextElementSibling;
+    if (view === 'list' && sub && sub.classList.contains('sub')) sub.hidden = !sub.hidden;
+    else openQr(it);   // 网格视图：直接弹出二维码，里面有全部分卷直链
+  }
+});
+
+$('#kw').oninput = e => { kw = e.target.value.trim(); render(); };
+$('#sort').onchange = render;
+$('#catSel').onchange = e => { cat = e.target.value; render(); };
+$('#themeBtn').onclick = () => {
+  document.body.classList.toggle('dark');
+  localStorage.setItem('vault_dark', document.body.classList.contains('dark') ? '1' : '');
+};
+$('#vList').onclick = () => { view = 'list'; $('#vList').classList.add('on'); $('#vGrid').classList.remove('on'); render(); };
+$('#vGrid').onclick = () => { view = 'grid'; $('#vGrid').classList.add('on'); $('#vList').classList.remove('on'); render(); };
+$('#viewHelp').onclick = () => $('#vGrid').click();
+$('#newBtn').onclick = () => {
+  const u = 'https://github.com/' + REPO + '/releases/new';
+  toast('前往 Release 页面上传文件');
+  window.open(u, '_blank', 'noopener');
+};
+$('#setBtn').onclick = () => { $('#repoI').value = REPO; $('#tokI').value = TOKEN; $('#setM').hidden = false; };
+$('#setX').onclick = () => $('#setM').hidden = true;
+$('#setM').onclick = e => { if (e.target.id === 'setM') $('#setM').hidden = true; };
+$('#setS').onclick = () => {
+  REPO = $('#repoI').value.trim(); TOKEN = $('#tokI').value.trim();
+  localStorage.setItem('vault_repo', REPO);
+  localStorage.setItem('vault_token', TOKEN);
+  $('#setM').hidden = true; load();
+};
+$('#setR').onclick = () => { $('#setM').hidden = true; load(); };
+$('#qrX').onclick = () => $('#qrM').hidden = true;
+$('#qrM').onclick = e => { if (e.target.id === 'qrM') $('#qrM').hidden = true; };
+$('#qrC').onclick = () => copy($('#qrL').value);
+
+if (localStorage.getItem('vault_dark')) document.body.classList.add('dark');
+load();
+</script>
+</body>
+</html>
