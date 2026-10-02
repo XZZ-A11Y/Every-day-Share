@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>半盏潮汐</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+<style>
+:root{
+  --bg:#fff; --bg2:#f5f5f5; --hover:#f0f0f0; --line:#e8e8e8;
+  --t1:#1f1f1f; --t2:#8a8a8a; --acc:#1a73e8; --accbg:#e8f0fe;
+  --rad:12px;
+}
+body.dark{
+  --bg:#1a1a1a; --bg2:#242424; --hover:#2e2e2e; --line:#333;
+  --t1:#ececec; --t2:#999; --acc:#8ab4f8; --accbg:#23324a;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--t1);
+  font:400 14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit; color:inherit; background:none; border:0; cursor:pointer}
+input{font:inherit; color:inherit}
+
+/* ===== 顶栏：一行标题 + 四个圆形图标 ===== */
+header{
+  position:sticky; top:0; z-index:10; background:var(--bg);
+  border-bottom:1px solid var(--line);
+  height:60px; display:flex; align-items:center; padding:0 18px; gap:14px;
+}
+.brand{font-size:15px; font-weight:500; letter-spacing:.3px; display:flex; align-items:center; gap:8px}
+.brand .lg{font-size:18px}
+.spacer{flex:1}
+.icons{display:flex; align-items:center; gap:6px}
+.ibtn{
+  width:36px; height:36px; border-radius:50%; display:grid; place-items:center;
+  font-size:16px; color:var(--t2); transition:.15s;
+}
+.ibtn:hover{background:var(--hover); color:var(--t1)}
+.ibtn.on{background:var(--accbg); color:var(--acc)}
+.ibtn.blue{background:var(--acc); color:#fff}
+.ibtn.blue:hover{background:var(--acc); opacity:.85}
+.dot{
+  width:20px; height:20px; border-radius:50%;
+  background:linear-gradient(135deg,#a855f7 0 50%,#facc15 50% 100%);
+}
+
+/* ===== 主体 ===== */
+main{max-width:1080px; margin:0 auto; padding:20px 18px 80px}
+
+.crumb{display:flex; align-items:center; gap:10px; margin-bottom:18px; font-size:14px}
+.crumb .back{
+  width:30px; height:30px; border-radius:50%; display:grid; place-items:center;
+  color:var(--t2);
+}
+.crumb .back:hover{background:var(--hover); color:var(--t1)}
+.crumb b{font-weight:500; font-size:16px}
+.crumb .cnt{color:var(--t2); font-size:12px}
+
+.search{
+  display:flex; align-items:center; gap:8px; height:36px; padding:0 14px;
+  background:var(--bg2); border-radius:18px; margin-bottom:14px;
+}
+.search svg{flex:none; opacity:.45}
+.search input{flex:1; min-width:0; border:0; outline:0; background:none; font-size:14px}
+.search input::placeholder{color:var(--t2)}
+
+/* 文件夹网格 */
+.fgrid{display:grid; gap:10px; grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.fcard{
+  border:1px solid var(--line); border-radius:var(--rad); padding:16px;
+  display:flex; flex-direction:column; gap:6px; transition:.15s;
+}
+.fcard:hover{background:var(--hover); border-color:var(--t2)}
+.fcard .ic{font-size:28px; line-height:1}
+.fcard .nm{font-weight:500; font-size:14px; word-break:break-all}
+.fcard .mt{font-size:12px; color:var(--t2)}
+
+/* 文件行 */
+.rows{display:flex; flex-direction:column}
+.rw{
+  display:flex; align-items:center; gap:12px; min-height:52px; padding:8px 10px;
+  border-bottom:1px solid var(--line); border-radius:8px; transition:.12s;
+}
+.rw:hover{background:var(--hover)}
+.rw .fi{font-size:18px; flex:none; width:24px; text-align:center}
+.rw .nm{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px}
+.rw .mt{flex:none; font-size:12px; color:var(--t2); white-space:nowrap}
+.rw .ops{flex:none; display:flex; gap:2px; opacity:0; transition:.15s}
+.rw:hover .ops{opacity:1}
+@media (hover:none){ .rw .ops{opacity:1} }
+.ob{width:30px; height:30px; border-radius:50%; display:grid; place-items:center; font-size:14px; color:var(--t2)}
+.ob:hover{background:var(--bg2); color:var(--t1)}
+.ob.dl{color:var(--acc)}
+.bdge{
+  flex:none; font-size:11px; padding:1px 6px; border-radius:4px;
+  background:var(--accbg); color:var(--acc);
+}
+
+/* 文件网格 */
+.ggrid{display:grid; gap:10px; grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+.gc{border:1px solid var(--line); border-radius:var(--rad); padding:12px; display:flex; flex-direction:column; gap:6px}
+.gc:hover{background:var(--hover)}
+.gc .th{height:64px; display:grid; place-items:center; font-size:32px; background:var(--bg2); border-radius:8px}
+.gc .nm{font-size:13px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.gc .mt{font-size:11px; color:var(--t2)}
+.gc .ops{display:flex; gap:2px}
+
+.empty{text-align:center; padding:70px 20px; color:var(--t2); font-size:13px}
+.empty div{font-size:36px; margin-bottom:10px; opacity:.5}
+
+/* ===== 弹窗 ===== */
+.mask{position:fixed; inset:0; background:rgba(0,0,0,.45); display:grid; place-items:center; z-index:100; padding:18px}
+.mask[hidden]{display:none}
+.dlg{width:min(600px,100%); background:var(--bg); border-radius:var(--rad); padding:20px; max-height:90vh; overflow:auto}
+.dlg h3{margin:0 0 3px; font-size:15px; font-weight:500}
+.dlg .sb{font-size:12px; color:var(--t2); margin-bottom:14px}
+.qrrow{display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start}
+.qrbox{width:180px; height:180px; flex:none; background:#fff; border:1px solid var(--line); border-radius:10px; padding:8px; display:grid; place-items:center}
+.qrbox img,.qrbox canvas{width:100%!important; height:100%!important}
+.qrside{flex:1 1 220px; display:flex; flex-direction:column; gap:9px; min-width:0}
+.qrside b{font-size:13px; font-weight:500; word-break:break-all}
+.qrside .mm{font-size:12px; color:var(--t2)}
+.inp{width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); font-size:12px; word-break:break-all; outline:0}
+.inp:focus{border-color:var(--acc)}
+.btns{display:flex; gap:8px; flex-wrap:wrap; margin-top:4px}
+.pl{height:34px; padding:0 16px; border-radius:17px; background:var(--acc); color:#fff; font-size:13px; font-weight:500}
+.pl:hover{opacity:.88}
+.pl.gh{background:none; color:var(--acc); border:1px solid var(--line)}
+.pl:disabled{opacity:.45; cursor:default}
+.plink{display:flex; flex-direction:column; gap:4px; max-height:140px; overflow:auto; font-size:12px}
+.plink a{color:var(--acc); text-decoration:none; word-break:break-all}
+.fld{display:flex; flex-direction:column; gap:5px; font-size:13px}
+.fld span{color:var(--t2); font-size:12px}
+.right{display:flex; justify-content:flex-end; margin-top:16px}
+
+.toast{
+  position:fixed; left:50%; bottom:26px; transform:translateX(-50%); z-index:200;
+  background:#2b2b2b; color:#fff; padding:10px 18px; border-radius:8px; font-size:13px;
+}
+body.dark .toast{background:#ececec; color:#1f1f1f}
+.toast[hidden]{display:none}
+
+@media (max-width:640px){
+  header{padding:0 12px}
+  main{padding:16px 12px 70px}
+  .rw .mt{display:none}
+  .rw .ops{opacity:1}
+  .fgrid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="lg">🌊</span><span id="ttl">半盏潮汐</span></div>
+  <div class="spacer"></div>
+  <div class="icons">
+    <button class="ibtn" id="bView" title="切换视图">▦</button>
+    <button class="ibtn" id="bHome" title="全部文件夹"><span class="dot"></span></button>
+    <button class="ibtn" id="bSet" title="设置">⚙</button>
+    <button class="ibtn blue" id="bTheme" title="深色模式">🌓</button>
+  </div>
+</header>
+
+<main id="main"></main>
+
+<!-- 二维码 -->
+<div class="mask" id="qrM" hidden>
+  <div class="dlg">
+    <h3>扫码下载</h3>
+    <div class="sb" id="qrS"></div>
+    <div class="qrrow">
+      <div class="qrbox" id="qrBox"><span style="color:#aaa;font-size:12px">生成中…</span></div>
+      <div class="qrside">
+        <b id="qrN"></b>
+        <div class="mm" id="qrMeta"></div>
+        <input class="inp" id="qrL" readonly>
+        <div class="btns">
+          <button class="pl" id="qrC">复制链接</button>
+          <button class="pl gh" id="qrD" disabled>保存二维码</button>
+        </div>
+        <div class="plink" id="qrP"></div>
+      </div>
+    </div>
+    <div class="right"><button class="pl gh" id="qrX">关闭</button></div>
+  </div>
+</div>
+
+<!-- 设置 -->
+<div class="mask" id="setM" hidden>
+  <div class="dlg" style="width:min(440px,100%)">
+    <h3>设置</h3>
+    <div class="sb">只保存在本机浏览器</div>
+    <div style="display:flex; flex-direction:column; gap:13px">
+      <label class="fld">
+        <span>仓库（用户名 / 仓库名）</span>
+        <input class="inp" id="repoI" placeholder="例如 octocat/Hello-World">
+      </label>
+      <label class="fld">
+        <span>Token（可选）：公开仓库可留空，填后接口限额 60 → 5000 次/小时</span>
+        <input class="inp" id="tokI" type="password" placeholder="ghp_xxx">
+      </label>
+      <label class="fld">
+        <span>排序</span>
+        <select class="inp" id="sortSel">
+          <option value="time">修改时间（新→旧）</option>
+          <option value="name">名称 A→Z</option>
+          <option value="size">体积 大→小</option>
+          <option value="hot">下载最多</option>
+        </select>
+      </label>
+      <div class="btns"><button class="pl" id="setS">保存并刷新</button></div>
+    </div>
+    <div class="right"><button class="pl gh" id="setX">关闭</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ================= 配置 ================= */
+const CONFIG = {
+  repo: '',        // 留空则从网址自动推断；也可写 '用户名/仓库名'
+  title: '半盏潮汐'
+};
+/* Release 版本号格式：分类-版次-提交次数
+   例：设计素材-v2-38  →  文件夹「设计素材」，版次 v2，提交次数 38
+   分隔符支持 - 或 _，取第一段作为文件夹名  */
+/* ======================================== */
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let items = [];            // 全部文件
+let folders = [];          // [{name, items[]}]
+let cur = null;            // 当前文件夹名，null = 顶层
+let kw = '';
+let view = 'grid';         // grid | list
+let sort = localStorage.getItem('vault_sort') || 'time';
+
+/* ---------- 仓库 ---------- */
+function guessRepo(){
+  if (CONFIG.repo) return CONFIG.repo;
+  const p = location.pathname.split('/').filter(Boolean);
+  if (location.hostname.endsWith('.github.io') && p.length)
+    return location.hostname.replace('.github.io','') + '/' + p[0];
+  return '';
+}
+let REPO = localStorage.getItem('vault_repo') || guessRepo();
+let TOKEN = localStorage.getItem('vault_token') || '';
+
+/* ---------- 工具 ---------- */
+function size(n){
+  const u = ['B','KB','MB','GB','TB']; let i = 0; n = +n || 0;
+  while (n >= 1024 && i < 4){ n /= 1024; i++; }
+  return (i ? n.toFixed(2) : n.toFixed(0)) + ' ' + u[i];
+}
+function fmtDate(s){
+  if (!s) return '';
+  const d = new Date(s);
+  if (isNaN(d)) return '';
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
+}
+function icon(name){
+  const e = (name.split('.').pop() || '').toLowerCase();
+  const m = {pdf:'📕',doc:'📘',docx:'📘',xls:'📗',xlsx:'📗',ppt:'📙',pptx:'📙',txt:'📝',md:'📝',
+    epub:'📚',mobi:'📚',azw3:'📚',
+    png:'🖼️',jpg:'🖼️',jpeg:'🖼️',webp:'🖼️',gif:'🖼️',svg:'🖼️',psd:'🎨',ai:'🎨',sketch:'🎨',fig:'🎨',
+    mp4:'🎬',mkv:'🎬',mov:'🎬',avi:'🎬',mp3:'🎵',flac:'🎵',wav:'🎵',m4a:'🎵',
+    zip:'🗜️',rar:'🗜️',gz:'🗜️',exe:'💿',msi:'💿',dmg:'💿',apk:'📱',
+    csv:'📊',json:'📊',parquet:'📊'};
+  return m[e] || '📄';
+}
+/* 解析 tag：分类-版次-提交次数 */
+function parseTag(tag){
+  const t = String(tag || '').trim();
+  const p = t.split(/[-_]/).filter(Boolean);
+  return { folder: p[0] || '未分类', ver: p[1] || '', commit: p[2] || '' };
+}
+/* 分卷合并：xxx.part000 / xxx.z01 / xxx.7z.002 */
+const PART = [/^(.+?)\.part(\d{1,3})$/i, /^(.+?)\.z(\d{2,3})$/i, /^(.+?)\.7z\.(\d{2,3})$/i];
+function mergeParts(list){
+  const g = {}, rest = [];
+  list.forEach(it => {
+    for (const re of PART){
+      const m = it.name.match(re);
+      if (m){ (g[m[1]] = g[m[1]] || []).push([+m[2], it]); return; }
+    }
+    rest.push(it);
+  });
+  const out = rest.slice();
+  for (const base in g){
+    const ps = g[base].sort((a,b) => a[0]-b[0]).map(x => x[1]);
+    const o = Object.assign({}, ps[0]);
+    o.name = base;
+    o.size = ps.reduce((s,x) => s + x.size, 0);
+    o.size_h = size(o.size);
+    o.dl = Math.max.apply(null, ps.map(x => x.dl));
+    o.multi = ps.map(p => ({name:p.name, url:p.url, sz:p.size_h}));
+    out.push(o);
+  }
+  return out;
+}
+
+/* ---------- 读取 ---------- */
+async function gh(path){
+  const h = { Accept:'application/vnd.github+json' };
+  if (TOKEN) h.Authorization = 'Bearer ' + TOKEN;
+  const r = await fetch('https://api.github.com' + path, { headers:h });
+  if (!r.ok) throw new Error('GitHub API ' + r.status + '（403 多为频率超限，可在设置填 Token）');
+  return r.json();
+}
+async function load(){
+  if (!REPO){
+    REPO = prompt('请输入仓库（用户名/仓库名）：') || '';
+    if (REPO) localStorage.setItem('vault_repo', REPO);
+  }
+  if (!REPO){
+    $('#main').innerHTML = '<div class="empty"><div>📂</div>未设置仓库<br>点右上角 ⚙ 填写</div>';
+    return;
+  }
+  $('#main').innerHTML = '<div class="empty"><div>⏳</div>正在读取 ' + esc(REPO) + ' …</div>';
+  try{
+    let rels = [], page = 1;
+    while (page <= 10){
+      const d = await gh('/repos/' + REPO + '/releases?per_page=100&page=' + page);
+      rels = rels.concat(d);
+      if (d.length < 100) break;
+      page++;
+    }
+    const tmp = [];
+    rels.forEach(r => {
+      if (r.draft) return;
+      const tg = parseTag(r.tag_name);
+      (r.assets || []).forEach(a => {
+        if (a.state !== 'uploaded') return;
+        tmp.push({
+          name: a.name,
+          folder: tg.folder,
+          ver: tg.ver,
+          commit: tg.commit,
+          tag: r.tag_name || '',
+          rel: r.name || r.tag_name || '',
+          rel_u: r.html_url || '',
+          size: a.size, size_h: size(a.size),
+          url: a.browser_download_url,
+          dl: a.download_count || 0,
+          up: a.updated_at || a.created_at || ''
+        });
+      });
+    });
+    items = mergeParts(tmp);
+
+    /* 按文件夹（tag 第一段）归并 */
+    const f = {};
+    items.forEach(i => (f[i.folder] = f[i.folder] || []).push(i));
+    folders = Object.keys(f).sort((a,b) => a.localeCompare(b,'zh'))
+      .map(k => ({
+        name: k,
+        items: f[k],
+        size: f[k].reduce((s,i) => s + i.size, 0),
+        up: f[k].reduce((m,i) => (i.up > m ? i.up : m), '')
+      }));
+    render();
+  }catch(e){
+    $('#main').innerHTML = '<div class="empty"><div>⚠️</div>读取失败：' + esc(e.message) +
+      '<br><br>点右上角 ⚙ 检查仓库名或填写 Token</div>';
+  }
+}
+
+/* ---------- 渲染 ---------- */
+function sorted(arr){
+  const cmp = {
+    time:(x,y) => String(y.up).localeCompare(String(x.up)),
+    name:(x,y) => x.name.localeCompare(y.name,'zh'),
+    size:(x,y) => y.size - x.size,
+    hot:(x,y) => y.dl - x.dl
+  };
+  return arr.slice().sort(cmp[sort] || cmp.time);
+}
+function render(){
+  $('#ttl').textContent = cur ? cur : CONFIG.title;
+  $('#bHome').classList.toggle('on', !cur);
+  $('#bView').textContent = view === 'grid' ? '▦' : '☰';
+  if (!folders.length){
+    $('#main').innerHTML = '<div class="empty"><div>📭</div>还没有文件<br>去 Release 上传后刷新</div>';
+    return;
+  }
+  const h = [];
+  /* 面包屑 */
+  h.push('<div class="crumb">' +
+    (cur ? '<button class="back" id="bk">←</button><b>' + esc(cur) + '</b>' : '<b>全部文件夹</b>') +
+    '<span class="cnt">' + (cur ? folderCount(cur) + ' 个文件 · ' + folderSize(cur) : folders.length + ' 个文件夹 · ' + size(items.reduce((s,i)=>s+i.size,0))) + '</span></div>');
+
+  if (!cur){
+    /* 顶层：文件夹 */
+    if (view === 'grid'){
+      h.push('<div class="fgrid">' + folders.map(f =>
+        '<button class="fcard" data-f="' + esc(f.name) + '">' +
+        '<span class="ic">📁</span>' +
+        '<span class="nm">' + esc(f.name) + '</span>' +
+        '<span class="mt">' + f.items.length + ' 个文件 · ' + size(f.size) + '</span>' +
+        '<span class="mt">' + (fmtDate(f.up) || '') + '</span>' +
+        '</button>').join('') + '</div>');
+    }else{
+      h.push('<div class="rows">' + folders.map(f =>
+        '<div class="rw" data-f="' + esc(f.name) + '" style="cursor:pointer">' +
+        '<span class="fi">📁</span>' +
+        '<span class="nm">' + esc(f.name) + '</span>' +
+        '<span class="mt">' + f.items.length + ' 个 · ' + size(f.size) + '</span>' +
+        '<span class="mt">' + (fmtDate(f.up) || '') + '</span>' +
+        '</div>').join('') + '</div>');
+    }
+  }else{
+    /* 文件夹内：文件 */
+    const f = folders.find(x => x.name === cur);
+    let list = f ? f.items : [];
+    if (kw){
+      const k = kw.toLowerCase();
+      list = list.filter(i => (i.name + ' ' + i.tag + ' ' + i.ver + ' ' + i.commit).toLowerCase().indexOf(k) >= 0);
+    }
+    list = sorted(list);
+    h.push('<div class="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>' +
+      '<input id="kw" type="search" placeholder="在此文件夹中搜索" value="' + esc(kw) + '"></div>');
+    if (!list.length){
+      h.push('<div class="empty"><div>🔍</div>没有匹配的文件</div>');
+    }else if (view === 'grid'){
+      h.push('<div class="ggrid">' + list.map(gcard).join('') + '</div>');
+    }else{
+      h.push('<div class="rows">' + list.map(row).join('') + '</div>');
+    }
+  }
+  $('#main').innerHTML = h.join('');
+
+  const bk = $('#bk');
+  if (bk) bk.onclick = () => { cur = null; kw = ''; render(); };
+  const inp = $('#kw');
+  if (inp){
+    inp.oninput = e => { kw = e.target.value.trim(); render(); const el = $('#kw'); if (el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); } };
+  }
+  $('#bHome').onclick = () => { cur = null; kw = ''; render(); };
+}
+function folderCount(n){ const f = folders.find(x => x.name === n); return f ? f.items.length : 0; }
+function folderSize(n){ const f = folders.find(x => x.name === n); return f ? size(f.size) : '0 B'; }
+
+function verTag(i){
+  const p = [];
+  if (i.ver) p.push(i.ver);
+  if (i.commit) p.push('#' + i.commit);
+  return p.join(' · ');
+}
+function row(i){
+  return '<div class="rw" data-n="' + esc(i.name) + '">' +
+    '<span class="fi">' + icon(i.name) + '</span>' +
+    '<span class="nm" title="' + esc(i.name) + '">' + esc(i.name) + '</span>' +
+    (verTag(i) ? '<span class="bdge">' + esc(verTag(i)) + '</span>' : '') +
+    (i.multi ? '<span class="bdge">分卷 ' + i.multi.length + '</span>' : '') +
+    '<span class="mt">' + esc(i.size_h) + '</span>' +
+    '<span class="mt">' + esc(fmtDate(i.up)) + '</span>' +
+    '<span class="ops">' +
+      '<button class="ob" data-a="copy" title="复制链接">🔗</button>' +
+      '<button class="ob" data-a="qr" title="二维码">▣</button>' +
+      (i.multi ? '<button class="ob" data-a="parts" title="分卷">☰</button>' : '') +
+      '<a class="ob dl" href="' + esc(i.url) + '" target="_blank" rel="noopener" title="下载">⬇</a>' +
+    '</span></div>';
+}
+function gcard(i){
+  return '<div class="gc" data-n="' + esc(i.name) + '">' +
+    '<div class="th">' + icon(i.name) + '</div>' +
+    '<div class="nm" title="' + esc(i.name) + '">' + esc(i.name) + '</div>' +
+    '<div class="mt">' + esc(i.size_h) + (verTag(i) ? ' · ' + esc(verTag(i)) : '') +
+      (i.multi ? ' · 分卷' + i.multi.length : '') + '</div>' +
+    '<div class="ops">' +
+      '<a class="ob dl" href="' + esc(i.url) + '" target="_blank" rel="noopener" title="下载">⬇</a>' +
+      '<button class="ob" data-a="copy" title="复制链接">🔗</button>' +
+      '<button class="ob" data-a="qr" title="二维码">▣</button>' +
+      (i.multi ? '<button class="ob" data-a="parts" title="分卷">☰</button>' : '') +
+    '</div></div>';
+}
+
+/* ---------- 交互 ---------- */
+let tt;
+function toast(m){
+  const t = $('#toast'); t.textContent = m; t.hidden = false;
+  clearTimeout(tt); tt = setTimeout(() => t.hidden = true, 2200);
+}
+function copy(text, it){
+  const ok = () => toast('链接已复制');
+  if (navigator.clipboard && isSecureContext) navigator.clipboard.writeText(text).then(ok).catch(fb);
+  else fb();
+  function fb(){
+    const t = document.createElement('textarea');
+    t.value = text; t.style.opacity = 0; document.body.append(t); t.select();
+    let done = false;
+    try { done = document.execCommand('copy'); } catch(e){ done = false; }
+    t.remove();
+    if (done){ ok(); return; }
+    toast('浏览器阻止复制，已打开链接窗口');
+    if (it) openQr(it);
+  }
+}
+let qrLib = null;
+function qrJs(){
+  if (qrLib) return qrLib;
+  const c = ['https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
+    'https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js',
+    'https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js'];
+  return qrLib = new Promise(res => {
+    if (window.QRCode) return res(1);
+    let i = 0;
+    (function nx(){
+      if (i >= c.length) return res(0);
+      const s = document.createElement('script');
+      s.src = c[i++];
+      s.onload = () => res(!!window.QRCode);
+      s.onerror = nx;
+      document.head.append(s);
+    })();
+  });
+}
+async function openQr(it){
+  $('#qrM').hidden = false;
+  $('#qrS').textContent = it.folder + (verTag(it) ? ' · ' + verTag(it) : '');
+  $('#qrN').textContent = it.name;
+  $('#qrMeta').textContent = it.size_h + ' · ' + fmtDate(it.up);
+  $('#qrL').value = it.url;
+  $('#qrD').disabled = true;
+  $('#qrP').innerHTML = it.multi
+    ? '<span style="color:var(--t2)">分卷直链：</span>' + it.multi.map(p =>
+      '<a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.name) + ' · ' + esc(p.sz) + '</a>').join('')
+    : '';
+  const box = $('#qrBox');
+  box.innerHTML = '<span style="color:#aaa;font-size:12px">生成中…</span>';
+  if (await qrJs() && window.QRCode){
+    try{
+      box.innerHTML = '';
+      const d = document.createElement('div');
+      box.append(d);
+      new window.QRCode(d, { text: it.url, width:164, height:164, colorDark:'#1f1f1f', colorLight:'#ffffff' });
+      setTimeout(() => {
+        const el = d.querySelector('canvas') || d.querySelector('img');
+        if (el){ $('#qrD').disabled = false; $('#qrD').onclick = () => saveQr(el, it.name); }
+      }, 200);
+      return;
+    }catch(e){}
+  }
+  const im = new Image();
+  im.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=0&data=' + encodeURIComponent(it.url);
+  im.onload = () => { box.innerHTML = ''; box.append(im); $('#qrD').disabled = false; $('#qrD').onclick = () => saveQr(im, it.name); };
+  im.onerror = () => { box.innerHTML = '<span style="color:#aaa;font-size:12px;text-align:center">二维码加载失败<br>可直接复制链接</span>'; };
+}
+function saveQr(el, name){
+  try{
+    let u;
+    if (el.tagName === 'CANVAS') u = el.toDataURL('image/png');
+    else { const c = document.createElement('canvas'); c.width = c.height = 180; c.getContext('2d').drawImage(el,0,0,180,180); u = c.toDataURL('image/png'); }
+    const a = document.createElement('a');
+    a.href = u; a.download = name.replace(/[\\/:*?"<>|]/g,'_').slice(0,60) + '.png';
+    a.click(); toast('二维码已保存');
+  }catch(e){ toast('保存失败，可截图'); }
+}
+
+/* 点击：文件夹 / 文件操作 */
+$('#main').addEventListener('click', e => {
+  const card = e.target.closest('[data-f]');
+  if (card){ cur = card.dataset.f; kw = ''; render(); return; }
+  const b = e.target.closest('[data-a]');
+  if (!b) return;
+  const host = b.closest('[data-n]');
+  const name = host && host.dataset.n;
+  const it = items.find(x => x.name === name);
+  if (!it) return;
+  const a = b.dataset.a;
+  if (a === 'copy') copy(it.url, it);
+  if (a === 'qr' || a === 'parts') openQr(it);
+});
+
+$('#bView').onclick = () => { view = view === 'grid' ? 'list' : 'grid'; render(); };
+$('#bTheme').onclick = () => {
+  document.body.classList.toggle('dark');
+  localStorage.setItem('vault_dark', document.body.classList.contains('dark') ? '1' : '');
+};
+$('#bSet').onclick = () => {
+  $('#repoI').value = REPO; $('#tokI').value = TOKEN; $('#sortSel').value = sort;
+  $('#setM').hidden = false;
+};
+$('#setX').onclick = () => $('#setM').hidden = true;
+$('#setM').onclick = e => { if (e.target.id === 'setM') $('#setM').hidden = true; };
+$('#setS').onclick = () => {
+  REPO = $('#repoI').value.trim(); TOKEN = $('#tokI').value.trim(); sort = $('#sortSel').value;
+  localStorage.setItem('vault_repo', REPO);
+  localStorage.setItem('vault_token', TOKEN);
+  localStorage.setItem('vault_sort', sort);
+  $('#setM').hidden = true; load();
+};
+$('#qrX').onclick = () => $('#qrM').hidden = true;
+$('#qrM').onclick = e => { if (e.target.id === 'qrM') $('#qrM').hidden = true; };
+$('#qrC').onclick = () => copy($('#qrL').value);
+
+if (localStorage.getItem('vault_dark')) document.body.classList.add('dark');
+load();
+</script>
+</body>
+</html>
