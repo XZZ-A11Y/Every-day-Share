@@ -17,8 +17,7 @@
 公开讨论会造成二次扩散。
 
 ## 联系方式
-- 本仓库 issues 页提交
-- 或在本仓库 Security 页点 "Report a vulnerability"
+- 在本仓库 Security 页点 "Report a vulnerability"
 
 报告时请附上：文件名、所在的 Release 版本号、问题描述，
 以及涉及的证明材料（如有）。
