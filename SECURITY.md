@@ -1,21 +1,35 @@
-# Security Policy
+# 安全策略
 
-## Supported Versions
+## 本仓库用途
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+本仓库仅用于**公开资料的分发与归档**，通过 GitHub Releases 附件提供下载。
+这里不发布软件、不接受代码贡献，也没有需要维护的版本号。
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+## 需要报告的情况
 
-## Reporting a Vulnerability
+如果你发现以下任一情况，请联系我处理：
 
-Use this section to tell people how to report a vulnerability.
+- 某个下载文件含有恶意内容、病毒，或疑似被篡改
+- 某个文件侵犯版权、隐私或其他合法权益
+- 仓库里出现了泄露的密钥、令牌、密码或个人敏感信息
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+**请不要用公开 Issue 报告以上内容**——尤其涉及侵权或敏感信息时，
+公开讨论会造成二次扩散。
+
+## 联系方式
+- 本仓库 issues 页提交
+- 或在本仓库 Security 页点 "Report a vulnerability"
+
+报告时请附上：文件名、所在的 Release 版本号、问题描述，
+以及涉及的证明材料（如有）。
+
+## 处理时效
+
+收到后我会尽快确认。涉及恶意文件或个人信息泄露的会优先处理，
+必要情况下直接删除或替换相关附件。
+
+## 下载者须知
+
+- 所有附件均为**公开分发**，任何人都可下载，请勿上传你不希望公开的内容
+- 下载后请自行校验文件安全性
+- 本仓库不对第三方来源文件的内容作任何担保
